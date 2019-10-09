@@ -1,2 +1,2 @@
 # Embylogic
-Just small OS to run a headless emby server (or plex through docker)
+Just small OS to run a headless emby server (or plex through docker) on Amlogic devices
