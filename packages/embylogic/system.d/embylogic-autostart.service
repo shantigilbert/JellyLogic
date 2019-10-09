@@ -1,0 +1,13 @@
+[Unit]
+Description=embylogic user autostart script
+before=emby.service
+After=graphical.target
+
+[Service]
+Type=oneshot
+Environment=HOME=/storage
+ExecStart=-/bin/sh -c ". /etc/profile; exec /bin/sh /storage/.config/autostart.sh"
+RemainAfterExit=yes
+
+[Install]
+WantedBy=embylogic.target

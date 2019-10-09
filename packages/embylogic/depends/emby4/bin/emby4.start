@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2019-present Shanti Gilbert (https://github.com/shantigilbert)
+
+LD_PRELOAD="/usr/lib/libMagickCore-7.Q16HDRI.so.6 /usr/lib/CORE_RL_Wand_.so" \
+nice -n 10 le_dotnet /emby/EmbyServer.dll -programdata /storage/emby -ffmpeg /usr/bin/ffmpeg -ffprobe /usr/bin/ffprobe
