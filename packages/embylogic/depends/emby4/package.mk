@@ -2,8 +2,8 @@
 # Copyright (C) 2019-present Shanti Gilbert (https://github.com/shantigilbert)
 
 PKG_NAME="emby4"
-PKG_VERSION="4.3.0.8"
-PKG_SHA256="fe0768bc240a2f5287190b5e806229c10fb84f9a219cfd6f393caea032562ac4"
+PKG_VERSION="4.4.0.40"
+PKG_SHA256="740e7328d517b1ffbb91d2c0f37884cdf67398af532848b005294d66fc540b9a"
 PKG_REV="105"
 PKG_ARCH="any"
 PKG_LICENSE="prop."

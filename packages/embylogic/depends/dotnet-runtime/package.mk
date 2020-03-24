@@ -9,8 +9,8 @@ case "$ARCH" in
     ;;
   "arm")
     PKG_NC_ARCH="arm"
-    PKG_SHA256="a4f2e63471c296b7b173105a2c1d5feb95b81e0a8131f73aeecc00440fa5f544"
-    PKG_URL="https://download.visualstudio.microsoft.com/download/pr/428aaa32-f66c-4847-b845-aa21f90504e4/1cf033db866414997140c2672bd75069/dotnet-runtime-2.2.6-linux-arm.tar.gz"
+    PKG_SHA256="217bafd4d8ff50d1f84d37f4456326d1690f670b8dc747b17e8a9d294adae841"
+    PKG_URL="https://download.visualstudio.microsoft.com/download/pr/8ccacf09-e5eb-481b-a407-2398b08ac6ac/1cef921566cb9d1ca8c742c9c26a521c/aspnetcore-runtime-3.1.2-linux-arm.tar.gz"
     ;;
   "x86_64")
     PKG_NC_ARCH="x64"
@@ -20,7 +20,7 @@ case "$ARCH" in
 esac
 
 PKG_NAME="dotnet-runtime"
-PKG_VERSION="2.2.6"
+PKG_VERSION="3.1.2"
 PKG_REV="107"
 PKG_ARCH="any"
 PKG_LICENSE="MIT"
