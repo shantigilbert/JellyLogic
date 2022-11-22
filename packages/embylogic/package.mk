@@ -7,25 +7,26 @@ PKG_REV="1"
 PKG_ARCH="any"
 PKG_SITE=""
 PKG_URL=""
-PKG_DEPENDS_TARGET="toolchain emby4 docker"
+PKG_DEPENDS_TARGET="toolchain jellyfin docker"
 PKG_SECTION="emuelec"
 PKG_SHORTDESC="Embylogic Meta Package"
 PKG_LONGDESC="Embylogic Meta Package"
 PKG_IS_ADDON="no"
 PKG_AUTORECONF="no"
-PKG_TOOLCHAIN="make"
+PKG_TOOLCHAIN="manual"
 
-make_target() {
-echo "hello"
-}
+#make_target() {
+#if [ "$PROJECT" == "Amlogic-ng" ]; then
+#	cp -r $PKG_DIR/display* $PKG_BUILD/
+#	cd $PKG_BUILD/display
+#	$CC -O2 display.c -o display
+#fi
+#}
+
 makeinstall_target() {
    
   mkdir -p $INSTALL/usr/config/
     cp -rf $PKG_DIR/config/* $INSTALL/usr/config/
-  
-  mkdir -p $INSTALL/usr/lib
-  cp -L  $(get_build_dir imagemagick)/.install_pkg/usr/lib/libMagickWand-7.Q16HDRI.so $INSTALL/usr/lib/CORE_RL_Wand_.so
-  cp -r $(get_build_dir gnutls)/.INSTALL_PKG/usr/lib/libgnutls.so* $INSTALL/usr/lib
    }
    
 

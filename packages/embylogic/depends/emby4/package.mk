@@ -2,8 +2,8 @@
 # Copyright (C) 2019-present Shanti Gilbert (https://github.com/shantigilbert)
 
 PKG_NAME="emby4"
-PKG_VERSION="4.4.0.40"
-PKG_SHA256="740e7328d517b1ffbb91d2c0f37884cdf67398af532848b005294d66fc540b9a"
+PKG_VERSION="4.4.3.0"
+PKG_SHA256="9f14243bdc400ca9da2bb1b3e2ca3755f96293a6016bfbb5689cd7fcbc963f6b"
 PKG_REV="105"
 PKG_ARCH="any"
 PKG_LICENSE="prop."
@@ -25,6 +25,12 @@ make_target() {
   ln -sf /storage/.config/emby $INSTALL/emby
 }
 
+makeinstall_target() {
+   
+  mkdir -p $INSTALL/usr/lib
+  cp -L  $(get_build_dir imagemagick)/.install_pkg/usr/lib/libMagickWand-7.Q16HDRI.so $INSTALL/usr/lib/CORE_RL_Wand_.so
+  cp -r $(get_build_dir gnutls)/.INSTALL_PKG/usr/lib/libgnutls.so* $INSTALL/usr/lib
+   }
 
 post_install() {
    enable_service emby4.service

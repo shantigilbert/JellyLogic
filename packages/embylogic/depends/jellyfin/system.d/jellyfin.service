@@ -1,0 +1,13 @@
+[Unit]
+Description=Jellyfin - streaming server
+Documentation=http://jellyfin.org
+Wants=kodi.service
+After=kodi.service
+Conflicts=service.emby.service
+
+[Service]
+ExecStart=/bin/sh /usr/bin/jellyfin.start
+Restart=always
+
+[Install]
+WantedBy=embylogic.service
