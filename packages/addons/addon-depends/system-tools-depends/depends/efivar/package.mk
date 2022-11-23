@@ -2,22 +2,32 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="efivar"
-PKG_VERSION="3e687d8072f3ed53ae727ec2cb99ae56dbcdf02b"
-PKG_SHA256="810d386c9f4dafc160c721ef73e491c933c311e3df768e27eec50c28ac0f4d97"
+PKG_VERSION="b920a6ca82250504167066d24aa8731ad29a0de8" # 10 Dec 2021
+PKG_SHA256="def327792854bdb5bc442e2907e1871c954e55e33d67045dcd2d2988f8a08afd"
 PKG_ARCH="x86_64"
 PKG_LICENSE="LGPL"
 PKG_SITE="https://github.com/rhboot/efivar"
-PKG_URL="https://github.com/rhboot/efivar/archive/$PKG_VERSION.tar.gz"
-PKG_DEPENDS_HOST="gcc:host"
+PKG_URL="https://github.com/rhboot/efivar/archive/${PKG_VERSION}.tar.gz"
+PKG_DEPENDS_HOST="toolchain:host"
 PKG_DEPENDS_TARGET="toolchain efivar:host"
 PKG_LONGDESC="Tools and library to manipulate EFI variables."
+PKG_BUILD_FLAGS="-gold"
+
+pre_make_host() {
+  export TOPDIR=${PKG_BUILD}
+}
 
 make_host() {
   make -C src/ include/efivar/efivar-guids.h
 }
 
+pre_make_target() {
+  sed -e 's/-Werror//' -i src/include/gcc.specs
+  export TOPDIR=${PKG_BUILD}
+}
+
 make_target() {
-  make -C src/ libefivar.a libefiboot.a efivar.h efivar
+  make CROSS_COMPILE=${TARGET_NAME}- -C src/ libefivar.a libefiboot.a efivar.h efivar
 }
 
 makeinstall_host() {
@@ -25,9 +35,9 @@ makeinstall_host() {
 }
 
 makeinstall_target() {
-  mkdir -p $SYSROOT_PREFIX/usr/lib
-    cp -P src/libefivar.a src/libefiboot.a $SYSROOT_PREFIX/usr/lib/
+  mkdir -p ${SYSROOT_PREFIX}/usr/lib
+    cp -P src/libefivar.a src/libefiboot.a ${SYSROOT_PREFIX}/usr/lib/
 
-  mkdir -p $SYSROOT_PREFIX/usr/include/efivar
-    cp -P src/include/efivar/*.h $SYSROOT_PREFIX/usr/include/efivar
+  mkdir -p ${SYSROOT_PREFIX}/usr/include/efivar
+    cp -P src/include/efivar/*.h ${SYSROOT_PREFIX}/usr/include/efivar
 }

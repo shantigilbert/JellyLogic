@@ -2,21 +2,13 @@
 # Copyright (C) 2009-2016 Stephan Raue (stephan@openelec.tv)
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
-# Notes:
-# - build curl with OpenSSL support instead GnuTLS support to
-#   work around a long standing bug on Pi where https streams often hang on
-#   start. This hang is normally fatal and requires a reboot.
-#   see also http://trac.xbmc.org/ticket/14674 .
-#   Easiest way to reproduce is to install gdrive addon and play a video from
-#   there: http://forum.xbmc.org/showthread.php?tid=177557
-
 PKG_NAME="curl"
-PKG_VERSION="7.65.3"
-PKG_SHA256="f2d98854813948d157f6a91236ae34ca4a1b4cb302617cebad263d79b0235fea"
+PKG_VERSION="7.86.0"
+PKG_SHA256="2d61116e5f485581f6d59865377df4463f2e788677ac43222b496d4e49fb627b"
 PKG_LICENSE="MIT"
-PKG_SITE="http://curl.haxx.se"
-PKG_URL="http://curl.haxx.se/download/$PKG_NAME-$PKG_VERSION.tar.xz"
-PKG_DEPENDS_TARGET="toolchain zlib openssl rtmpdump nghttp2"
+PKG_SITE="https://curl.haxx.se"
+PKG_URL="https://curl.haxx.se/download/${PKG_NAME}-${PKG_VERSION}.tar.xz"
+PKG_DEPENDS_TARGET="toolchain zlib openssl rtmpdump libidn2 nghttp2"
 PKG_LONGDESC="Client and library for (HTTP, HTTPS, FTP, ...) transfers."
 PKG_TOOLCHAIN="configure"
 
@@ -43,6 +35,7 @@ PKG_CONFIGURE_OPTS_TARGET="ac_cv_lib_rtmp_RTMP_Init=yes \
                            --disable-smb \
                            --disable-smtp \
                            --disable-gopher \
+                           --disable-mqtt \
                            --disable-manual \
                            --enable-libgcc \
                            --enable-ipv6 \
@@ -60,31 +53,32 @@ PKG_CONFIGURE_OPTS_TARGET="ac_cv_lib_rtmp_RTMP_Init=yes \
                            --without-spnego \
                            --without-gssapi \
                            --with-zlib \
+                           --without-brotli \
+                           --without-zstd \
                            --without-egd-socket \
                            --enable-thread \
                            --with-random=/dev/urandom \
                            --without-gnutls \
                            --with-ssl \
-                           --without-polarssl \
+                           --without-mbedtls \
                            --without-nss \
                            --with-ca-bundle=/run/libreelec/cacert.pem \
                            --without-ca-path \
                            --without-libpsl \
-                           --without-libmetalink \
                            --without-libssh2 \
-                           --with-librtmp=$SYSROOT_PREFIX/usr \
-                           --without-libidn \
-                           --without-libidn2 \
+                           --with-librtmp \
+                           --with-libidn2 \
                            --with-nghttp2"
 
-pre_configure_target() {
-# link against librt because of undefined reference to 'clock_gettime'
-  export LIBS="-lrt -lm -lrtmp"
+post_configure_target() {
+  libtool_remove_rpath libtool
 }
 
 post_makeinstall_target() {
-  rm -rf $INSTALL/usr/share/zsh
-  rm -rf $INSTALL/usr/bin/curl-config
+  rm -rf ${INSTALL}/usr/share/zsh
 
-  sed -e "s:\(['= ]\)/usr:\\1$SYSROOT_PREFIX/usr:g" -i $SYSROOT_PREFIX/usr/bin/curl-config
+  rm -rf ${INSTALL}/usr/bin/${PKG_NAME}-config
+  cp ${PKG_NAME}-config ${TOOLCHAIN}/bin
+  sed -e "s:\(['= ]\)/usr:\\1${PKG_ORIG_SYSROOT_PREFIX}/usr:g" -i ${TOOLCHAIN}/bin/${PKG_NAME}-config
+  chmod +x ${TOOLCHAIN}/bin/${PKG_NAME}-config
 }

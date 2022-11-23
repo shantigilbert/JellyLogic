@@ -3,19 +3,20 @@
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="binutils"
-PKG_VERSION="2.32"
-PKG_SHA256="9b0d97b3d30df184d302bced12f976aa1e5fbf4b0be696cdebc6cca30411a46e"
+PKG_VERSION="2.39"
+PKG_SHA256="645c25f563b8adc0a81dbd6a41cffbf4d37083a382e02d5d3df4f65c09516d00"
 PKG_LICENSE="GPL"
-PKG_SITE="http://www.gnu.org/software/binutils/"
-PKG_URL="http://ftpmirror.gnu.org/binutils/$PKG_NAME-$PKG_VERSION.tar.gz"
+PKG_SITE="https://www.gnu.org/software/binutils/"
+PKG_URL="https://ftp.gnu.org/gnu/binutils/${PKG_NAME}-${PKG_VERSION}.tar.xz"
 PKG_DEPENDS_HOST="ccache:host bison:host flex:host linux:host"
-PKG_DEPENDS_TARGET="toolchain binutils:host"
+PKG_DEPENDS_TARGET="toolchain zlib binutils:host"
 PKG_LONGDESC="A GNU collection of binary utilities."
 
-PKG_CONFIGURE_OPTS_HOST="--target=$TARGET_NAME \
-                         --with-sysroot=$SYSROOT_PREFIX \
-                         --with-lib-path=$SYSROOT_PREFIX/lib:$SYSROOT_PREFIX/usr/lib \
+PKG_CONFIGURE_OPTS_HOST="--target=${TARGET_NAME} \
+                         --with-sysroot=${SYSROOT_PREFIX} \
+                         --with-lib-path=${SYSROOT_PREFIX}/lib:${SYSROOT_PREFIX}/usr/lib \
                          --without-ppl \
+                         --enable-static \
                          --without-cloog \
                          --disable-werror \
                          --disable-multilib \
@@ -28,9 +29,10 @@ PKG_CONFIGURE_OPTS_HOST="--target=$TARGET_NAME \
                          --enable-lto \
                          --disable-nls"
 
-PKG_CONFIGURE_OPTS_TARGET="--target=$TARGET_NAME \
-                         --with-sysroot=$SYSROOT_PREFIX \
-                         --with-lib-path=$SYSROOT_PREFIX/lib:$SYSROOT_PREFIX/usr/lib \
+PKG_CONFIGURE_OPTS_TARGET="--target=${TARGET_NAME} \
+                         --with-sysroot=${SYSROOT_PREFIX} \
+                         --with-lib-path=${SYSROOT_PREFIX}/lib:${SYSROOT_PREFIX}/usr/lib \
+                         --with-system-zlib \
                          --without-ppl \
                          --without-cloog \
                          --enable-static \
@@ -54,12 +56,15 @@ pre_configure_host() {
 
 make_host() {
   make configure-host
-  make
+  # override the makeinfo binary with true - this does not build the documentation
+  make MAKEINFO=true
 }
 
 makeinstall_host() {
-  cp -v ../include/libiberty.h $SYSROOT_PREFIX/usr/include
-  make install
+  cp -v ../include/libiberty.h ${SYSROOT_PREFIX}/usr/include
+  make -C bfd install # fix parallel build with libctf requiring bfd
+  # override the makeinfo binary with true - this does not build the documentation
+  make HELP2MAN=true MAKEINFO=true install
 }
 
 make_target() {
@@ -71,10 +76,10 @@ make_target() {
 }
 
 makeinstall_target() {
-  mkdir -p $SYSROOT_PREFIX/usr/lib
-    cp libiberty/libiberty.a $SYSROOT_PREFIX/usr/lib
-  make DESTDIR="$SYSROOT_PREFIX" -C bfd install
-  make DESTDIR="$SYSROOT_PREFIX" -C opcodes install
+  mkdir -p ${SYSROOT_PREFIX}/usr/lib
+    cp libiberty/libiberty.a ${SYSROOT_PREFIX}/usr/lib
+  make DESTDIR="${SYSROOT_PREFIX}" -C bfd install
+  make DESTDIR="${SYSROOT_PREFIX}" -C opcodes install
 
   mkdir -p ${INSTALL}/usr/bin
     cp binutils/strings ${INSTALL}/usr/bin

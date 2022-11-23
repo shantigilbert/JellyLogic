@@ -3,11 +3,11 @@
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="libnfs"
-PKG_VERSION="4.0.0"
-PKG_SHA256="6ee77e9fe220e2d3e3b1f53cfea04fb319828cc7dbb97dd9df09e46e901d797d"
+PKG_VERSION="5.0.2"
+PKG_SHA256="637e56643b19da9fba98f06847788c4dad308b723156a64748041035dcdf9bd3"
 PKG_LICENSE="LGPL2.1+"
 PKG_SITE="https://github.com/sahlberg/libnfs"
-PKG_URL="https://github.com/sahlberg/libnfs/archive/libnfs-$PKG_VERSION.tar.gz"
+PKG_URL="https://github.com/sahlberg/libnfs/archive/libnfs-${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain"
 PKG_LONGDESC="A client library for accessing NFS shares over a network."
 PKG_TOOLCHAIN="autotools"
@@ -15,5 +15,5 @@ PKG_TOOLCHAIN="autotools"
 PKG_CONFIGURE_OPTS_TARGET="--disable-examples"
 
 pre_configure_target() {
-  export CFLAGS="$CFLAGS -D_FILE_OFFSET_BITS=64"
+  export CFLAGS="${CFLAGS} -D_FILE_OFFSET_BITS=64"
 }

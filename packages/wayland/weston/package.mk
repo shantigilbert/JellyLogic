@@ -2,43 +2,60 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="weston"
-PKG_VERSION="3.0.0"
-PKG_SHA256="cde1d55e8dd70c3cbb3d1ec72f60e60000041579caa1d6a262bd9c35e93723a5"
-PKG_LICENSE="OSS"
+PKG_VERSION="11.0.0"
+PKG_SHA256="a6138d4dc9554560ac304312df456019f4be025ec79130f05fb5f2e41c091e1d"
+PKG_LICENSE="MIT"
 PKG_SITE="https://wayland.freedesktop.org/"
-PKG_URL="https://wayland.freedesktop.org/releases/${PKG_NAME}-${PKG_VERSION}.tar.xz"
-PKG_DEPENDS_TARGET="toolchain wayland-protocols libdrm libxkbcommon libinput cairo libjpeg-turbo dbus"
+PKG_URL="https://gitlab.freedesktop.org/wayland/weston/-/releases/${PKG_VERSION}/downloads/${PKG_NAME}-${PKG_VERSION}.tar.xz"
+PKG_DEPENDS_TARGET="toolchain wayland wayland-protocols libdrm libxkbcommon libinput cairo pango libjpeg-turbo dbus seatd"
 PKG_LONGDESC="Reference implementation of a Wayland compositor"
 
-PKG_CONFIGURE_OPTS_TARGET="CFLAGS=-DMESA_EGL_NO_X11_HEADERS \
-                           LIBS=-lturbojpeg \
-                           --with-cairo-glesv2 \
-                           --disable-xwayland \
-                           --disable-x11-compositor \
-                           --disable-xwayland-test \
-                           --disable-libunwind \
-                           --disable-colord \
-                           --disable-ivi-shell \
-                           --disable-fbdev-compositor \
-                           --disable-rdp-compositor \
-                           --disable-screen-sharing \
-                           --disable-vaapi-recorder \
-                           --disable-headless-compositor \
-                           --enable-systemd-login \
-                           --disable-weston-launch \
-                           --disable-fullscreen-shell \
-                           --disable-demo-clients-install \
-                           --enable-systemd-notify"
+PKG_MESON_OPTS_TARGET="-Dbackend-drm=true \
+                       -Dbackend-drm-screencast-vaapi=false \
+                       -Dbackend-headless=false \
+                       -Dbackend-rdp=false \
+                       -Dscreenshare=false \
+                       -Dbackend-wayland=false \
+                       -Dbackend-x11=false \
+                       -Dbackend-default=drm \
+                       -Drenderer-gl=true \
+                       -Dxwayland=false \
+                       -Dsystemd=true \
+                       -Dremoting=false \
+                       -Dpipewire=false \
+                       -Dshell-desktop=true \
+                       -Dshell-fullscreen=false \
+                       -Dshell-ivi=false \
+                       -Dshell-kiosk=false \
+                       -Ddesktop-shell-client-default="weston-desktop-shell" \
+                       -Dcolor-management-lcms=false \
+                       -Dlauncher-logind=false \
+                       -Dlauncher-libseat=true \
+                       -Dimage-jpeg=true \
+                       -Dimage-webp=false \
+                       -Dtools=['terminal']
+                       -Ddemo-clients=false \
+                       -Dsimple-clients=[] \
+                       -Dresize-pool=false \
+                       -Dwcap-decode=false \
+                       -Dtest-junit-xml=false \
+                       -Dtest-skip-is-failure=false \
+                       -Ddoc=false"
+
+pre_configure_target() {
+  # weston does not build with NDEBUG (requires assert for tests)
+  export TARGET_CFLAGS=$(echo ${TARGET_CFLAGS} | sed -e "s|-DNDEBUG||g")
+}
 
 post_makeinstall_target() {
-  mkdir -p $INSTALL/usr/lib/weston
-    cp $PKG_DIR/scripts/weston-config $INSTALL/usr/lib/weston
+  mkdir -p ${INSTALL}/usr/lib/weston
+    cp ${PKG_DIR}/scripts/weston-config ${INSTALL}/usr/lib/weston
 
-  mkdir -p $INSTALL/usr/share/weston
-    cp $PKG_DIR/config/weston.ini $INSTALL/usr/share/weston
+  mkdir -p ${INSTALL}/usr/share/weston
+    cp ${PKG_DIR}/config/weston.ini ${INSTALL}/usr/share/weston
+    find_file_path "splash/splash-2160.png" && cp ${FOUND_PATH} ${INSTALL}/usr/share/weston/libreelec-wallpaper-2160.png
 
-  rm -r $INSTALL/usr/share/wayland-sessions
-  rm -r $INSTALL/usr/lib/weston-simple-im
+  safe_remove ${INSTALL}/usr/share/wayland-sessions
 }
 
 post_install() {

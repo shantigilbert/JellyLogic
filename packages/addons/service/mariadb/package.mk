@@ -2,31 +2,40 @@
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="mariadb"
-PKG_VERSION="10.3.14"
-PKG_REV="103"
-PKG_SHA256="ba1c94d92fc8ebdf9b8a1d1b93ed6aeeead33da507efbbd4afcf49f32023e054"
+PKG_VERSION="10.9.4"
+PKG_REV="108"
+PKG_SHA256="1dff08a0f37ea5cf8f00cbd12d40e80759fae7d73184ccf56b5b51acfdcfc054"
 PKG_LICENSE="GPL2"
 PKG_SITE="https://mariadb.org"
-PKG_URL="https://downloads.mariadb.org/interstitial/${PKG_NAME}-${PKG_VERSION}/source/${PKG_NAME}-${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_HOST="toolchain ncurses:host"
-PKG_DEPENDS_TARGET="toolchain binutils bzip2 libaio libxml2 lzo ncurses openssl systemd zlib mariadb:host"
+PKG_URL="https://downloads.mariadb.com/MariaDB/${PKG_NAME}-${PKG_VERSION}/source/${PKG_NAME}-${PKG_VERSION}.tar.gz"
+PKG_DEPENDS_HOST="toolchain:host ncurses:host openssl:host"
+PKG_DEPENDS_TARGET="toolchain binutils boost bzip2 libaio libfmt libxml2 lz4 lzo ncurses openssl pcre2 systemd zlib mariadb:host"
 PKG_SHORTDESC="MariaDB is a community-developed fork of the MySQL."
 PKG_LONGDESC="MariaDB (${PKG_VERSION}) is a fast SQL database server and a drop-in replacement for MySQL."
 PKG_TOOLCHAIN="cmake"
-PKG_BUILD_FLAGS="-gold"
+PKG_BUILD_FLAGS="-gold -sysroot"
 
 PKG_IS_ADDON="yes"
 PKG_SECTION="service"
 PKG_ADDON_NAME="MariaDB SQL database server"
 PKG_ADDON_TYPE="xbmc.service"
 
+pre_configure_target() {
+  # mariadb does not need / nor build successfully with _FILE_OFFSET_BITS or _TIME_BITS set
+  if [ "${TARGET_ARCH}" = "arm" ]; then
+    export CFLAGS=$(echo ${CFLAGS} | sed -e "s|-D_FILE_OFFSET_BITS=64||g")
+    export CFLAGS=$(echo ${CFLAGS} | sed -e "s|-D_TIME_BITS=64||g")
+    export CXXFLAGS=$(echo ${CXXFLAGS} | sed -e "s|-D_FILE_OFFSET_BITS=64||g")
+    export CXXFLAGS=$(echo ${CXXFLAGS} | sed -e "s|-D_TIME_BITS=64||g")
+  fi
+}
+ 
 configure_package() {
   PKG_CMAKE_OPTS_HOST=" \
     -DCMAKE_INSTALL_MESSAGE=NEVER \
     -DSTACK_DIRECTION=-1 \
     -DHAVE_IB_GCC_ATOMIC_BUILTINS=1 \
-    -DCMAKE_CROSSCOMPILING=OFF \
-    import_executables"
+    -DCMAKE_CROSSCOMPILING=OFF"
 
   PKG_CMAKE_OPTS_TARGET=" \
     -DCMAKE_INSTALL_MESSAGE=NEVER \
@@ -42,7 +51,8 @@ configure_package() {
     -DWITH_SSL=system \
     -DWITH_SSL=${SYSROOT_PREFIX}/usr \
     -DWITH_JEMALLOC=OFF \
-    -DWITH_PCRE=bundled \
+    -DWITHOUT_TOKUDB=1 \
+    -DWITH_PCRE=system \
     -DWITH_ZLIB=bundled \
     -DWITH_EDITLINE=bundled \
     -DWITH_LIBEVENT=bundled \
@@ -60,7 +70,13 @@ configure_package() {
     -DENABLE_STATIC_LIBS=OFF \
     -DMYSQL_UNIX_ADDR=/var/run/mysqld/mysqld.sock \
     -DWITH_SAFEMALLOC=OFF \
-    -DWITHOUT_AUTH_EXAMPLES=ON"
+    -DWITHOUT_AUTH_EXAMPLES=ON \
+    -DLSTAT_FOLLOWS_SLASHED_SYMLINK_EXITCODE=0 \
+    -DLSTAT_FOLLOWS_SLASHED_SYMLINK_EXITCODE__TRYRUN_OUTPUT='' \
+    -DMASK_LONGDOUBLE_EXITCODE=0 \
+    -DMASK_LONGDOUBLE_EXITCODE__TRYRUN_OUTPUT='' \
+    -DSTAT_EMPTY_STRING_BUG_EXITCODE=0 \
+    -DSTAT_EMPTY_STRING_BUG_EXITCODE__TRYRUN_OUTPUT=''"
 }
 
 make_host() {
@@ -71,21 +87,19 @@ makeinstall_host() {
   :
 }
 
-makeinstall_target() {
-  # use only for addon
-  DESTDIR=${PKG_BUILD}/.install_addon ninja ${NINJA_OPTS} install
-  rm -rf "${PKG_BUILD}/.install_addon/usr/mysql-test"
+post_makeinstall_target() {
+  rm -rf "${PKG_INSTALL}/usr/mysql-test"
 }
 
 addon() {
   local ADDON="${ADDON_BUILD}/${PKG_ADDON_ID}"
-  local MARIADB="${PKG_BUILD}/.install_addon/usr"
+  local MARIADB="${PKG_INSTALL}/usr"
 
   mkdir -p ${ADDON}/bin
   mkdir -p ${ADDON}/config
 
-  cp ${MARIADB}/bin/mysql \
-     ${MARIADB}/bin/mysqld \
+  cp ${MARIADB}/bin/mariadbd \
+     ${MARIADB}/bin/mysql \
      ${MARIADB}/bin/mysqladmin \
      ${MARIADB}/bin/mysqldump \
      ${MARIADB}/bin/mysql_secure_installation \

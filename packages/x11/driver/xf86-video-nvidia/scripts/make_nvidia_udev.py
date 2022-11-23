@@ -1,8 +1,13 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import os
+import os, sys
 import requests
-from lxml import html
+
+try:
+  from lxml import html
+except:
+  print('lxml module not installed.\n\nOn Ubuntu, use "sudo apt install python3-lxml"')
+  sys.exit(1)
 
 __cwd__     = os.path.dirname(os.path.realpath(__file__))
 __rules__    = __cwd__ + '/../udev.d/96-nvidia.rules'
@@ -15,7 +20,12 @@ for line in open(__package__, 'r'):
    break
 
 url = 'http://us.download.nvidia.com/XFree86/Linux-x86_64/' + __version__ + '/README/supportedchips.html'
-page = requests.get(url)
+
+headers = {
+  'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15.0) Gecko/20100101 Firefox/15.0.1',
+}
+
+page = requests.get(url, headers=headers)
 tree = html.fromstring(page.content)
 
 # These are the tables we want to use (gpu's supported by the current driver)
@@ -40,11 +50,11 @@ unique_ids = sorted(set(unique_ids))
 # Write the rules to the file
 with open(__rules__, 'w') as f:
   f.write('ACTION!="add|change", GOTO="end_video"\n')
-  f.write('SUBSYSTEM=="pci", ATTR{class}=="0x030000", ATTRS{vendor}=="0x10de", GOTO="subsystem_pci"\n')
+  f.write('SUBSYSTEM=="pci", ATTR{class}=="0x030000", ATTR{vendor}=="0x10de", GOTO="subsystem_pci"\n')
   f.write('GOTO="end_video"\n\n')
   f.write('LABEL="subsystem_pci"\n')
   for id in unique_ids:
-    f.write('ATTRS{device}=="0x' + str(id) + '", GOTO="configure_nvidia"\n')
+    f.write('ATTR{device}=="0x' + str(id) + '", GOTO="configure_nvidia"\n')
   f.write('GOTO="configure_nvidia-legacy"\n\n')
   f.write('LABEL="configure_nvidia"\n')
   f.write('ENV{xorg_driver}="nvidia", TAG+="systemd", ENV{SYSTEMD_WANTS}+="xorg-configure@nvidia.service"\n')

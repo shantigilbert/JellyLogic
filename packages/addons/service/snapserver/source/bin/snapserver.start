@@ -32,17 +32,30 @@ case "$ss_st" in
     stream="pipe://$file?name=Kodi"
     ;;
   Spotify)
-    stream="spotify:///librespot?name=Spotify"
+    stream="spotify:///librespot?name=Spotify&devicename=$ss_ln"
+    if [ "$ss_lp" != 0 ]; then
+        stream="$stream&params=--zeroconf-port%3D$ss_lp"
+    fi
     ;;
   *)
     stream="airplay:///shairport-sync?name=AirPlay"
     ;;
 esac
 
+if [ "$ss_eh" = "true" ] ; then
+  enable_http=1
+else
+  enable_http=0
+fi
+
 HOME="$ADDON_HOME" \
 nice -n "$ss_ni" \
 snapserver \
-  --controlPort  "$ss_cp"  \
-  --port         "$ss_sp"  \
-  --stream       "$stream" \
+  --controlPort          "$ss_cp"  \
+  --port                 "$ss_sp"  \
+  --http.enabled         "$enable_http" \
+  --http.port            "$ss_hp" \
+  --http.bind_to_address "$ss_ha" \
+  --http.doc_root="$ADDON_DIR/snapweb" \
+  --stream.stream        "$stream" \
   > /dev/null

@@ -1,3 +1,43 @@
+117
+- mediainfo: update to 22.09
+- libmediainfo: update to 22.09
+- mpg123: update to 1.30.2 and https
+- squeezelite: update to 2022-04-10 (1.9.9.1403)
+
+116
+- libmediainfo: update to 21.09
+- mediainfo: update to 21.09
+- mpg123: update to 1.29.3
+- mpv-drmprime: update to 0.34.1
+- squeezelite: update to 2022-01-06 (1.9.9.1395)
+
+115
+- libmediainfo: update to 21.03
+- libzen: update to 0.4.39
+- mediainfo: update to 21.03
+- mpg123: update to 1.27.2
+- mpv-drmprime: update to 0.33.1
+- squeezelite: update to 2021-05-13 (1.9.9.1386)
+
+114
+- squeezelite: update to 2021-01-03 (1.9.8.1315)
+
+113
+- libmediainfo: update to 20.09
+- libzen: update to 0.4.38
+- mediainfo: update to 20.09
+- mpg123: update to 1.26.4
+- mpv-drmprime: update to 0.33.0
+
+112
+- Update sqeezelite 2020-11-16
+
+111
+- drop mesa-demos and mpv
+
+110
+- Add mpv
+
 109
 - Update squeezelite to b2ed99e and support all possible media formats
 

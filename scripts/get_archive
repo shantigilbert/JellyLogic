@@ -30,21 +30,36 @@ unset LD_LIBRARY_PATH
 rm -f "${STAMP_URL}" "${STAMP_SHA}"
 
 NBWGET=10
-while [ ${NBWGET} -gt 0 ]; do
+NBCHKS=2
+while [ ${NBWGET} -gt 0 -a ${NBCHKS} -gt 0 ]; do
   for url in "${PKG_URL}" "${PACKAGE_MIRROR}"; do
+    if [[ "$PKG_USETOKEN" == "yes" ]]; then
+      if [[ $url == https://github.com/* ]] && [[ -n $COREELEC_GHTOKEN ]]; then
+        WGET_HEADER=--header="Authorization: token $COREELEC_GHTOKEN"
+      fi
+    else
+      WGET_HEADER=--header=""
+    fi
+
     rm -f "${PACKAGE}"
-    if ${WGET_CMD} "${url}"; then
+    if ${WGET_CMD} "$WGET_HEADER" "${url}"; then
       CALC_SHA256=$(sha256sum "${PACKAGE}" | cut -d" " -f1)
 
       [ -z "${PKG_SHA256}" -o "${PKG_SHA256}" = "${CALC_SHA256}" ] && break 2
 
-      build_msg "CLR_WARNING" "WARNING" "Incorrect checksum calculated on downloaded file: got ${CALC_SHA256} wanted ${PKG_SHA256}"
+      if [ "${CHANGE_HASH}" = "yes" ]; then
+        sed -e "s|^PKG_SHA256=.*|PKG_SHA256=\"${CALC_SHA256}\"|" -i "${PKG_DIR}/package.mk"
+        break 2
+      else
+        build_msg "CLR_WARNING" "WARNING" "Incorrect checksum calculated on downloaded file: got ${CALC_SHA256} wanted ${PKG_SHA256}"
+        NBCHKS=$((NBCHKS - 1))
+      fi
     fi
   done
   NBWGET=$((NBWGET - 1))
 done
 
-if [ ${NBWGET} -eq 0 ]; then
+if [ ${NBWGET} -eq 0 -o ${NBCHKS} -eq 0 ]; then
   die "\nCannot get ${1} sources : ${PKG_URL}\nTry later!"
 else
   build_msg "CLR_INFO" "INFO" "Calculated checksum: ${CALC_SHA256}"

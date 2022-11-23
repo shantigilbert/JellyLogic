@@ -1,0 +1,7 @@
+<advancedsettings version="1.0">
+  <cputempcommand>/usr/bin/cputemp</cputempcommand>
+  <gputempcommand>/usr/bin/gputemp</gputempcommand>
+
+  <showexitbutton>false</showexitbutton>
+  <remotedelay>1</remotedelay>
+</advancedsettings>

@@ -3,11 +3,11 @@
 # Copyright (C) 2019-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="libopenmpt"
-PKG_VERSION="0.4.5"
-PKG_SHA256="0b4cc0cc8fbbdabc6263a900ff3560dae7be43be011b6f2bc9913f7a0ed3a521"
+PKG_VERSION="0.6.6"
+PKG_SHA256="6ddb9e26a430620944891796fefb1bbb38bd9148f6cfc558810c0d3f269876c7"
 PKG_LICENSE="BSD"
-PKG_SITE="http://lib.openmpt.org/libopenmpt/"
-PKG_URL="http://lib.openmpt.org/files/libopenmpt/src/${PKG_NAME}-${PKG_VERSION}+release.autotools.tar.gz"
+PKG_SITE="https://lib.openmpt.org/libopenmpt/"
+PKG_URL="https://lib.openmpt.org/files/libopenmpt/src/${PKG_NAME}-${PKG_VERSION}+release.autotools.tar.gz"
 PKG_DEPENDS_TARGET="toolchain libogg libvorbis zlib"
 PKG_LONGDESC="libopenmpt renders mod music files as raw audio data, for playing or conversion."
 PKG_BUILD_FLAGS="+pic"

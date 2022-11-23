@@ -3,11 +3,11 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="vdr-plugin-eepg"
-PKG_VERSION="c46be443988489780f993a47d23a42936b49d6c0"
-PKG_SHA256="08b343caa392bddefeb6e8cfe6f341b4e11e120046dce05961a335a06e9bee6c"
+PKG_VERSION="6be7f2ee644aa33bd6e6e038548be8a85514272e"
+PKG_SHA256="f8698d8e72c4e1239a57ba4a0b2f54020270506d5dce7298f3080fcc8d59f56f"
 PKG_LICENSE="GPL"
 PKG_SITE="http://projects.vdr-developer.org/projects/plg-eepg"
-PKG_URL="https://github.com/vdr-projects/vdr-plugin-eepg/archive/$PKG_VERSION.tar.gz"
+PKG_URL="https://github.com/vdr-projects/vdr-plugin-eepg/archive/${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain vdr"
 PKG_NEED_UNPACK="$(get_pkg_directory vdr)"
 PKG_LONGDESC="This plugin parses the Extended EPG data which is send by providers on their portal channels."
@@ -15,8 +15,8 @@ PKG_TOOLCHAIN="manual"
 
 make_target() {
   VDR_DIR=$(get_build_dir vdr)
-  export PKG_CONFIG_PATH=$VDR_DIR:$PKG_CONFIG_PATH
-  export CPLUS_INCLUDE_PATH=$VDR_DIR/include
+  export PKG_CONFIG_PATH=${VDR_DIR}:${PKG_CONFIG_PATH}
+  export CPLUS_INCLUDE_PATH=${VDR_DIR}/include
 
   make \
     LIBDIR="." \
@@ -26,8 +26,8 @@ make_target() {
 
 post_make_target() {
   VDR_DIR=$(get_build_dir vdr)
-  VDR_APIVERSION=`sed -ne '/define APIVERSION/s/^.*"\(.*\)".*$/\1/p' $VDR_DIR/config.h`
+  VDR_APIVERSION=$(sed -ne '/define APIVERSION/s/^.*"\(.*\)".*$/\1/p' ${VDR_DIR}/config.h)
   LIB_NAME=lib${PKG_NAME/-plugin/}
 
-  cp --remove-destination $PKG_BUILD/${LIB_NAME}.so $PKG_BUILD/${LIB_NAME}.so.${VDR_APIVERSION}
+  cp --remove-destination ${PKG_BUILD}/${LIB_NAME}.so ${PKG_BUILD}/${LIB_NAME}.so.${VDR_APIVERSION}
 }

@@ -14,4 +14,8 @@ PKG_LONGDESC="xf86-video-vmware: The Xorg driver for vmware video"
 PKG_TOOLCHAIN="autotools"
 
 PKG_CONFIGURE_OPTS_TARGET="--enable-vmwarectrl-client \
-                           --with-xorg-module-dir=$XORG_PATH_MODULES"
+                           --with-xorg-module-dir=${XORG_PATH_MODULES}"
+
+post_configure_target() {
+  libtool_remove_rpath libtool
+}

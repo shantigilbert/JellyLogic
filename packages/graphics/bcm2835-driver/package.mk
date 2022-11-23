@@ -3,8 +3,8 @@
 # Copyright (C) 2017-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="bcm2835-driver"
-PKG_VERSION="66bafab005569e3eb92ec54cd3efeee3da338738"
-PKG_SHA256="262b2eab4af814ada6d7806a23dd720b5e6c5706a19cfe46ea30c19f76fdc11b"
+PKG_VERSION="6cbf00359959cf7381f4e3773037c7d5573d94b2"
+PKG_SHA256="8febbda58d38b730050722f8ca72ff02502a5372071a3a8cab0b639135f6f2b6"
 PKG_LICENSE="nonfree"
 PKG_SITE="http://www.broadcom.com"
 PKG_URL="${DISTRO_SRC}/${PKG_NAME}-${PKG_VERSION}.tar.xz"
@@ -20,33 +20,21 @@ else
 fi
 
 makeinstall_target() {
-  # Install vendor header files
+  # Install vendor header files except proprietary GL headers
   mkdir -p ${SYSROOT_PREFIX}/usr/include
-    if [ "${OPENGLES}" = "bcm2835-driver" ]; then
-      cp -PRv ${PKG_FLOAT}/opt/vc/include/* ${SYSROOT_PREFIX}/usr/include
-    else
-      for f in $(cd ${PKG_FLOAT}/opt/vc/include; ls | grep -v "GL"); do
-        cp -PRv ${PKG_FLOAT}/opt/vc/include/$f ${SYSROOT_PREFIX}/usr/include
-      done
-    fi
+    for f in $(cd ${PKG_FLOAT}/opt/vc/include; ls | grep -v "GL"); do
+      cp -PRv ${PKG_FLOAT}/opt/vc/include/${f} ${SYSROOT_PREFIX}/usr/include
+    done
 
-  # Install EGL, OpenGL ES, Open VG, etc. vendor libs & pkgconfigs
+  # Install vendor libs & pkgconfigs except proprietary GL libs
   mkdir -p ${SYSROOT_PREFIX}/usr/lib
-    if [ "${OPENGLES}" = "bcm2835-driver" ]; then
-      cp -PRv ${PKG_FLOAT}/opt/vc/lib/*.so              ${SYSROOT_PREFIX}/usr/lib
-      ln -sf ${SYSROOT_PREFIX}/usr/lib/libbrcmEGL.so    ${SYSROOT_PREFIX}/usr/lib/libEGL.so
-      ln -sf ${SYSROOT_PREFIX}/usr/lib/libbrcmGLESv2.so ${SYSROOT_PREFIX}/usr/lib/libGLESv2.so
-      cp -PRv ${PKG_FLOAT}/opt/vc/lib/*.a               ${SYSROOT_PREFIX}/usr/lib
-      cp -PRv ${PKG_FLOAT}/opt/vc/lib/pkgconfig         ${SYSROOT_PREFIX}/usr/lib
-    else
-      for f in $(cd ${PKG_FLOAT}/opt/vc/lib; ls *.so *.a | grep -Ev "^lib(EGL|GL)"); do
-        cp -PRv ${PKG_FLOAT}/opt/vc/lib/$f              ${SYSROOT_PREFIX}/usr/lib
+    for f in $(cd ${PKG_FLOAT}/opt/vc/lib; ls *.so *.a | grep -Ev "^lib(EGL|GL)"); do
+      cp -PRv ${PKG_FLOAT}/opt/vc/lib/${f}              ${SYSROOT_PREFIX}/usr/lib
+    done
+    mkdir -p ${SYSROOT_PREFIX}/usr/lib/pkgconfig
+      for f in $(cd ${PKG_FLOAT}/opt/vc/lib/pkgconfig; ls | grep -v "gl"); do
+        cp -PRv ${PKG_FLOAT}/opt/vc/lib/pkgconfig/${f}  ${SYSROOT_PREFIX}/usr/lib/pkgconfig
       done
-      mkdir -p ${SYSROOT_PREFIX}/usr/lib/pkgconfig
-        for f in $(cd ${PKG_FLOAT}/opt/vc/lib/pkgconfig; ls | grep -v "gl"); do
-          cp -PRv ${PKG_FLOAT}/opt/vc/lib/pkgconfig/$f  ${SYSROOT_PREFIX}/usr/lib/pkgconfig
-        done
-    fi
 
   # Update prefix in vendor pkgconfig files
   for PKG_CONFIGS in $(find "${SYSROOT_PREFIX}/usr/lib" -type f -name "*.pc" 2>/dev/null); do
@@ -58,19 +46,11 @@ makeinstall_target() {
     ln -sf ${SYSROOT_PREFIX}/usr/lib     ${SYSROOT_PREFIX}/opt/vc/lib
     ln -sf ${SYSROOT_PREFIX}/usr/include ${SYSROOT_PREFIX}/opt/vc/include
 
-  # Install EGL, OpenGL ES and other vendor libs
+  # Install vendor libs except proprietary GL
   mkdir -p ${INSTALL}/usr/lib
-    if [ "${OPENGLES}" = "bcm2835-driver" ]; then
-      cp -PRv ${PKG_FLOAT}/opt/vc/lib/*.so ${INSTALL}/usr/lib
-      ln -sf /usr/lib/libbrcmEGL.so        ${INSTALL}/usr/lib/libEGL.so
-      ln -sf /usr/lib/libbrcmEGL.so        ${INSTALL}/usr/lib/libEGL.so.1
-      ln -sf /usr/lib/libbrcmGLESv2.so     ${INSTALL}/usr/lib/libGLESv2.so
-      ln -sf /usr/lib/libbrcmGLESv2.so     ${INSTALL}/usr/lib/libGLESv2.so.2
-    else
-      for f in $(cd ${PKG_FLOAT}/opt/vc/lib; ls *.so | grep -Ev "^lib(EGL|GL)"); do
-        cp -PRv ${PKG_FLOAT}/opt/vc/lib/$f ${INSTALL}/usr/lib
-      done
-    fi
+    for f in $(cd ${PKG_FLOAT}/opt/vc/lib; ls *.so | grep -Ev "^lib(EGL|GL)"); do
+      cp -PRv ${PKG_FLOAT}/opt/vc/lib/${f} ${INSTALL}/usr/lib
+    done
 
   # Install useful tools
   mkdir -p ${INSTALL}/usr/bin
@@ -88,9 +68,3 @@ makeinstall_target() {
     ln -sf /usr/lib ${INSTALL}/opt/vc/lib
 }
 
-post_install() {
-  # unbind Framebuffer console
-  if [ "${OPENGLES}" = "bcm2835-driver" ]; then
-    enable_service unbind-console.service
-  fi
-}

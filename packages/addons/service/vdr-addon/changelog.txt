@@ -1,3 +1,45 @@
+120
+- update live to 3.1.6
+
+119
+- update VDR to 2.6.1
+
+118
+- update VDR to 2.6.0
+
+117
+- update VDR to 2.4.8
+- update libzip to 1.8.0
+
+116
+- update VDR to 2.4.7
+- update eepg to f8698d8
+- update epgsearch to cff8dfe
+- update iptv to 7369c95
+- update live to b2938de
+- update robotv to f521e57
+- update satip to 0a216f1
+- update wirbelscan 2021.03.07
+
+115
+- add locale. Install and configure Locale Addon to select language.
+- fix VNSI: use header from current wirbelscan
+- fix wirbelscan: convert country names to utf8
+
+114
+- update VNSI plugin to 47a90dd
+
+113
+- update VDR to 2.4.6
+- update VNSI plugin to 908684b
+
+112
+- update VDR to 2.4.4
+- update dvbapi to 2019-07-27
+- update iptv to 2020-01-03
+- update robotv to 2020-05-04
+- update satip to 2020-02-18
+
 111
 - update VDR to 2.4.1
 - update epgsearch to 2019-04-11

@@ -1,35 +1,35 @@
 # SPDX-License-Identifier: GPL-2.0
 # Copyright (C) 2017-present Team LibreELEC (https://libreelec.tv)
-# Copyright (C) 2018-present Team CoreELEC (https://coreelec.org)
+# Copyright (C) 2020-present Team CoreELEC (https://coreelec.org)
 
 PKG_NAME="driverselect"
-PKG_VERSION="a06eeee1801e0840bd9533e9c2b2c99c0810957f"
-PKG_SHA256="99eeb374e58752351d321fe0b3a4e4909a25d56e5ec901022c4f0e9e711e071b"
+PKG_VERSION="17d69cfa9781b9f987428cccd22a240bec4ebf9b"
+PKG_SHA256="fd9e73b5618b52be9e95a7c2392ac49544a7d153e418c515dcff9915aaee7e2c"
 PKG_REV="100"
 PKG_ARCH="any"
 PKG_LICENSE="OSS"
 PKG_SITE="https://libreelec.tv"
-PKG_URL="https://github.com/CoreELEC/script.program.driverselect/archive/$PKG_VERSION.tar.gz"
+PKG_URL="https://github.com/CoreELEC/script.program.driverselect/archive/${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain"
 PKG_SECTION="script.program"
 PKG_SHORTDESC="script.program.driverselect"
 PKG_LONGDESC="script.program.driverselect"
 PKG_TOOLCHAIN="manual"
 
-PKG_IS_ADDON="embedded"
+PKG_IS_ADDON="yes"
 PKG_ADDON_NAME="Driver Select"
 PKG_ADDON_TYPE="xbmc.python.script"
 
 unpack() {
-  mkdir -p $PKG_BUILD/addon
-  tar --strip-components=1 -xf $SOURCES/$PKG_NAME/$PKG_NAME-$PKG_VERSION.tar.gz -C $PKG_BUILD/addon
+  mkdir -p ${PKG_BUILD}
+  tar --strip-components=1 -xf ${SOURCES}/${PKG_NAME}/${PKG_NAME}-${PKG_VERSION}.tar.gz -C ${PKG_BUILD}
 }
 
 make_target() {
   :
 }
 
-makeinstall_target() {
-  mkdir -p $INSTALL/usr/share/kodi/addons/${PKG_SECTION}.${PKG_NAME}
-  cp -rP $PKG_BUILD/addon/* $INSTALL/usr/share/kodi/addons/${PKG_SECTION}.${PKG_NAME}
+addon() {
+  mkdir -p ${ADDON_BUILD}/${PKG_ADDON_ID}
+  cp -PR ${PKG_BUILD}/* ${ADDON_BUILD}/${PKG_ADDON_ID}
 }

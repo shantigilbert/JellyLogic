@@ -1,15 +1,18 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # SPDX-License-Identifier: GPL-2.0
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv
-
-from __future__ import print_function
 
 import re
 import os
 import requests
 import sys
-from lxml import html
+
+try:
+  from lxml import html
+except:
+  print('lxml module not installed.\n\nOn Ubuntu, use "sudo apt install python3-lxml"')
+  sys.exit(1)
 
 category = {
              1: 'Nvidia Geforce GPUs',
@@ -37,7 +40,12 @@ for version in sys.argv[1:]:
 
 for version in versions:
   url = 'http://us.download.nvidia.com/XFree86/Linux-x86_64/' + version + '/README/supportedchips.html'
-  page = requests.get(url)
+
+  headers = {
+    'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15.0) Gecko/20100101 Firefox/15.0.1',
+  }
+
+  page = requests.get(url, headers=headers)
   tree = html.fromstring(page.content)
 
   # These are the tables we want to use (gpu's supported by the current driver)

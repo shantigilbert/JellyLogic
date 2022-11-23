@@ -1,18 +1,15 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # Copyright (C) 2009-2012 Stephan Raue (stephan@openelec.tv)
-# Copyright (C) 2018 Team LibreELEC (https://libreelec.tv)
-# Copyright (C) 2018-present Team CoreELEC (https://coreelec.org)
+# Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
 import os
 import sys
 import time
 import xbmcaddon
 import subprocess
-from xml.dom.minidom import parse
+import json
 
-sys.path.append('/usr/share/kodi/addons/service.coreelec.settings')
-
-import oe
+import xbmc
 
 __addon__ = xbmcaddon.Addon();
 __path__  = os.path.join(__addon__.getAddonInfo('path'), 'bin') + '/'
@@ -36,20 +33,28 @@ def startchrome(args):
     new_env['VAAPI_MODE'] = __addon__.getSetting('VAAPI_MODE')
     new_env['WINDOW_MODE'] = __addon__.getSetting('WINDOW_MODE')
     new_env['RASTER_MODE'] = __addon__.getSetting('RASTER_MODE')
+    new_env['DARK_MODE'] = __addon__.getSetting('DARK_MODE')
 
-    new_env['ALSA_DEVICE'] = ''
     if __addon__.getSetting('USE_CUST_AUDIODEVICE') == 'true':
-      alsa_device = __addon__.getSetting('CUST_AUDIODEVICE_STR')
+      audio_device = __addon__.getSetting('CUST_AUDIODEVICE_STR')
     else:
-      alsa_device = getAudioDevice()
-    if not alsa_device == None and not alsa_device == '':
-      new_env['ALSA_DEVICE'] = alsa_device
+      audio_device = getAudioDevice()
+
+    new_env['AUDIO_DEVICE_TYPE'] = getAudioDeviceType(audio_device)
+    if new_env['AUDIO_DEVICE_TYPE'] == "ALSA":
+      new_env['ALSA_DEVICE'] = ''
+      alsa_device = getAlsaAudioDevice(audio_device)
+      if not alsa_device == None and not alsa_device == '':
+        new_env['ALSA_DEVICE'] = alsa_device
+
+    if __addon__.getSetting('USE_CUST_USERAGENT') == 'true':
+      new_env['USER_AGENT'] = __addon__.getSetting('CUST_USERAGENT_STR')
 
     chrome_params = args + ' ' + \
                     __addon__.getSetting('HOMEPAGE')
     subprocess.call(__path__ + 'chrome-start ' + chrome_params, shell=True, env=new_env)
-  except Exception, e:
-    oe.dbg_log('chrome', unicode(e))
+  except Exception as e:
+    xbmc.log('## Chrome Error:' + repr(e), xbmc.LOGERROR)
 
 def isRuning(pname):
   tmp = os.popen("ps -Af").read()
@@ -59,22 +64,28 @@ def isRuning(pname):
   return False
 
 def getAudioDevice():
-  try:
-    dom = parse("/storage/.kodi/userdata/guisettings.xml")
-    audiooutput=dom.getElementsByTagName('audiooutput')
-    for node in audiooutput:
-      dev = node.getElementsByTagName('audiodevice')[0].childNodes[0].nodeValue
-    if dev.startswith("ALSA:"):
-      dev = dev.split("ALSA:")[1]
-      if dev == "@":
-        return None
-      if dev.startswith("@:"):
-        dev = dev.split("@:")[1]
-    else:
-      # not ALSA
-      return None
-  except:
+  return json.loads(xbmc.executeJSONRPC(json.dumps({
+                      "jsonrpc": "2.0",
+                      "method": "Settings.GetSettingValue",
+                      "params": {
+                                  "setting": "audiooutput.audiodevice",
+                                },
+                      "id": 1,
+                   })))['result']['value']
+
+def getAudioDeviceType(dev):
+  if dev.startswith("ALSA:"):
+    return "ALSA"
+  if dev.startswith("PULSE:"):
+    return "PULSE"
+  return None
+
+def getAlsaAudioDevice(dev):
+  dev = dev.split("ALSA:")[1]
+  if dev == "@":
     return None
+  if dev.startswith("@:"):
+    dev = dev.split("@:")[1]
   if dev.startswith("CARD="):
     dev = "plughw:" + dev
   return dev
@@ -100,3 +111,4 @@ else:
       time.sleep(1)
     resumeXbmc()
 
+del __addon__

@@ -4,18 +4,19 @@
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="open-vm-tools"
-PKG_VERSION="stable-10.3.10"
-PKG_SHA256="6e39e643edcd85bae04ba8db608bd500d14ff3771e6e89b171ffb31020fed945"
+PKG_VERSION="12.1.0"
+PKG_SHA256="4c867a3f8b6c636eb98c9faa76c4280b0fdb75e2923dc0deec77dd24dd3f43b1"
 PKG_ARCH="x86_64"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/vmware/open-vm-tools"
-PKG_URL="https://github.com/vmware/open-vm-tools/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain fuse glib:host glib libdnet libtirpc"
+PKG_URL="https://github.com/vmware/open-vm-tools/archive/stable-${PKG_VERSION}.tar.gz"
+PKG_DEPENDS_TARGET="toolchain fuse3 glib:host glib libdnet libtirpc"
 PKG_LONGDESC="open-vm-tools: open source implementation of VMware Tools"
 PKG_TOOLCHAIN="autotools"
 
 PKG_CONFIGURE_OPTS_TARGET="--disable-docs \
                            --disable-tests \
+                           --disable-containerinfo \
                            --disable-deploypkg \
                            --without-pam \
                            --without-gtk2 \
@@ -25,26 +26,35 @@ PKG_CONFIGURE_OPTS_TARGET="--disable-docs \
                            --without-xerces \
                            --without-icu \
                            --without-kernel-modules \
+                           --with-fuse=fuse3 \
                            --with-udev-rules-dir=/usr/lib/udev/rules.d/ \
-                           --with-sysroot=$SYSROOT_PREFIX"
+                           --with-sysroot=${SYSROOT_PREFIX}"
+
+configure_package() {
+  PKG_CONFIGURE_SCRIPT="${PKG_BUILD}/open-vm-tools/configure"
+}
 
 post_unpack() {
-  mv $PKG_BUILD/$PKG_NAME/* $PKG_BUILD/
-
-  sed -i -e 's|.*common-agent/etc/config/Makefile.*||' $PKG_BUILD/configure.ac
-  mkdir -p $PKG_BUILD/common-agent/etc/config
+  # Hack to allow package to be bumped without linking against old libraries
+  rm -f ${SYSROOT_PREFIX}/usr/lib/libvmtools*
 }
 
 pre_configure_target() {
   export LIBS="-ldnet -ltirpc"
 }
 
-post_makeinstall_target() {
-  rm -rf $INSTALL/sbin
-  rm -rf $INSTALL/usr/share
-  rm -rf $INSTALL/etc/vmware-tools/scripts/vmware/network
+post_configure_target() {
+  libtool_remove_rpath libtool
+}
 
-  find $INSTALL/etc/vmware-tools/ -type f | xargs sed -i '/.*expr.*/d'
+post_makeinstall_target() {
+  rm -rf ${INSTALL}/sbin
+  rm -rf ${INSTALL}/usr/share
+  rm -rf ${INSTALL}/etc/vmware-tools/scripts/vmware/network
+
+  chmod -x ${INSTALL}/usr/lib/udev/rules.d/*.rules
+
+  find ${INSTALL}/etc/vmware-tools/ -type f | xargs sed -i '/.*expr.*/d'
 }
 
 post_install() {

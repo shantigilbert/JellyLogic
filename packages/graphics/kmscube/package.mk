@@ -2,18 +2,17 @@
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="kmscube"
-PKG_VERSION="98f31bf"
-PKG_SHA256="78b52b9e606f0d3444e10ea2ed7c0c03a87f1ad2ef99e35036551395faade041"
+PKG_VERSION="9f63f359fab1b5d8e862508e4e51c9dfe339ccb0"
+PKG_SHA256="896ac76671a9b89836a7014b16cc85b45b041e03fe34a8f529f4718aa2b15cef"
 PKG_LICENSE="GPL"
-PKG_SITE="https://cgit.freedesktop.org/mesa/kmscube"
-PKG_URL="https://cgit.freedesktop.org/mesa/kmscube/snapshot/$PKG_VERSION.tar.xz"
+PKG_SITE="https://gitlab.freedesktop.org/mesa/kmscube"
+PKG_URL="https://gitlab.freedesktop.org/mesa/kmscube/-/archive/master/kmscube-${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain"
 PKG_LONGDESC="Example KMS/GBM/EGL application"
-PKG_TOOLCHAIN="autotools"
 
-if [ "$OPENGLES_SUPPORT" = "yes" ]; then
-  PKG_DEPENDS_TARGET+=" $OPENGLES"
-elif [ "$OPENGL_SUPPORT" = "yes" ]; then
+if [ "${OPENGLES_SUPPORT}" = "yes" ]; then
+  PKG_DEPENDS_TARGET+=" ${OPENGLES}"
+elif [ "${OPENGL_SUPPORT}" = "yes" ]; then
   echo "kmscube only supports OpenGLESv2"
   exit 0
 fi

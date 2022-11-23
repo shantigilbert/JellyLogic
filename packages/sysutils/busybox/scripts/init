@@ -4,8 +4,8 @@
 # Copyright (C) 2010-2011 Roman Weber (roman@openelec.tv)
 # Copyright (C) 2012 Yann Cézard (eesprit@free.fr)
 # Copyright (C) 2009-2014 Stephan Raue (stephan@openelec.tv)
-# Copyright (C) 2016-2018 Team LibreELEC (https://libreelec.tv)
-# Copyright (C) 2018-present Team CoreELEC (https://coreelec.org)
+# Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
+# Copyright (C) 2020-present Team CoreELEC (https://coreelec.org)
 
 # create directories
 /usr/bin/busybox mkdir -p /dev
@@ -15,6 +15,7 @@
 /usr/bin/busybox mkdir -p /flash
 /usr/bin/busybox mkdir -p /sysroot
 /usr/bin/busybox mkdir -p /storage
+/usr/bin/busybox mkdir -p /run
 
 # temp mountpoint for updates
 /usr/bin/busybox mkdir -p /update
@@ -23,9 +24,8 @@
 /usr/bin/busybox mount -t devtmpfs devtmpfs /dev
 /usr/bin/busybox mount -t proc proc /proc
 /usr/bin/busybox mount -t sysfs sysfs /sys
-
-# set needed variables
-MODULE_DIR=/usr/lib/modules
+# /run options have to match what systemd uses by default
+/usr/bin/busybox mount -t tmpfs -o mode=755,size=20%,nr_inodes=800k,nosuid,nodev,strictatime tmpfs /run
 
 UPDATE_ROOT=/storage/.update
 UPDATE_DIR="$UPDATE_ROOT"
@@ -53,8 +53,10 @@ BIGFONT="1080"
 
 TEE_PID=""
 
+FORCE_SPLASH="no"
+
 # Get a serial number if present (eg. RPi) otherwise use MAC address from eth0
-MACHINE_UID="$(cat /proc/cpuinfo | awk '/^Serial/{s=$3; gsub ("^0*","",s); print s}')"
+MACHINE_UID="$(awk '/^Serial/{s='0000000' $3; print substr(s, length(s) - 7)}' /proc/cpuinfo)"
 [ -z "$MACHINE_UID" ] && MACHINE_UID="$(cat /sys/class/net/eth0/address 2>/dev/null | tr -d :)"
 
 # common functions
@@ -62,9 +64,17 @@ MACHINE_UID="$(cat /proc/cpuinfo | awk '/^Serial/{s=$3; gsub ("^0*","",s); print
 
 # script functions
 progress() {
+  echo "init: ### ${1::160}" >/dev/kmsg
+
   if test "$PROGRESS" = "yes"; then
     echo "### $1 ###" >&2
   fi
+}
+
+echo_to_kmsg() {
+  while IFS= read -r line || [ -n "${line}" ]; do
+    echo "init: ### ${line::160}" >/dev/kmsg
+  done
 }
 
 debug_msg() {
@@ -205,7 +215,7 @@ mount_nfs() {
 
   [ "$NFS_OPTIONS" = "$1" ] && NFS_OPTIONS=
 
-  mount_common "$NFS_EXPORT" "$2" "$3,nolock,soft,timeo=3,retrans=2,rsize=32768,wsize=32768,$NFS_OPTIONS" "nfs"
+  mount_common "$NFS_EXPORT" "$2" "$3,nolock,rsize=32768,wsize=32768,$NFS_OPTIONS" "nfs"
 }
 
 mount_ubifs() {
@@ -283,7 +293,15 @@ mount_sysroot() {
 get_project_arch() {
   if [ -f ${1}/etc/os-release ]; then
     . ${1}/etc/os-release
-    echo "${COREELEC_ARCH:-${LIBREELEC_ARCH}}"
+    echo "${LIBREELEC_ARCH}"
+  fi
+}
+
+# mount the specified SYSTEM file and output version from /etc/os-release
+get_project_version() {
+  if [ -f ${1}/etc/os-release ]; then
+    . ${1}/etc/os-release
+    echo "${VERSION}"
   fi
 }
 
@@ -332,10 +350,26 @@ check_is_compatible() {
   return 0
 }
 
+display_versions() {
+  local old_project_version new_project_version
+
+  old_project_version="$(get_project_version "/sysroot")" || return
+  new_project_version="$(get_project_version "/update")" || return
+
+  if [ -n "${old_project_version}" -a -n "${new_project_version}" ]; then
+    echo ""
+    echo "Updating from ${old_project_version} to ${new_project_version}"
+    echo ""
+  fi
+
+  return 0
+}
+
 update_file() {
   if [ -f "$UPDATE_DIR/$2" -a -f "$3" ]; then
     mount -o remount,rw /flash
 
+    rm -f "$3"
     StartProgress percent "Updating $1... " "$3" $(stat -t "$UPDATE_DIR/$2" | awk '{print $2}')
       # use dd here with conv=fsync so that all writes are non-buffered
       # ensuring accurate progress - take the sync hit during the
@@ -382,10 +416,10 @@ update_bootloader() {
 load_modules() {
   progress "Loading kernel modules"
 
-  [ ! -f "/etc/modules" ] && return
+  [ ! -f /etc/modules ] && return
   for module in $(cat /etc/modules); do
     progress "Loading kernel module $module"
-    insmod "$MODULE_DIR/$module.ko" || progress "... Failed to load kernel module $module, skipping"
+    insmod "/usr/lib/modules/$module.ko" || progress "... Failed to load kernel module $module, skipping"
   done
 }
 
@@ -407,12 +441,6 @@ load_splash() {
 
   if [ ! "$SPLASH" = "no" ]; then
     progress "Loading bootsplash"
-
-    # load uvesafb module if needed
-    if [ -f "$MODULE_DIR/uvesafb.ko" -a ! -e /dev/fb0 ]; then
-      progress "Loading kernel module uvesafb.ko"
-      insmod "$MODULE_DIR/uvesafb.ko" && set_default_res=yes || progress "... Failed to load kernel module uvesafb, skipping"
-    fi
 
     if [ -e /dev/fb0 ]; then
       # Set framebuffer to a custom resolution and/or fallback to default resolution (1024x768-32), if required.
@@ -443,21 +471,29 @@ load_splash() {
       if [ -z "$SPLASHIMAGE" ]; then
         vres="$(fbset 2>/dev/null | awk '/geometry/ { print $3 }')"
 
-        for s in /flash/oemsplash-${vres}.png \
+        for s in /flash/progress/oemsplash-${vres}- \
+                 /flash/progress/oemsplash-1080- \
+                 /flash/progress/oemsplash- \
+                 /flash/oemsplash-${vres}.png \
                  /flash/oemsplash-1080.png \
                  /flash/oemsplash.png \
+                 /splash/progress/splash-${vres}- \
+                 /splash/progress/splash-1080- \
                  /splash/splash-${vres}.png \
                  /splash/splash-1080.png \
                  ; do
           if [ -f "${s}" ]; then
             SPLASHIMAGE="${s}"
             break
+          elif [ "$FORCE_SPLASH" = "no" -a -f "${s}config" ]; then
+            SPLASHIMAGE="${s}"
+            break
           fi
         done
       fi
 
-      if [ -n "$SPLASHIMAGE" -a -f "$SPLASHIMAGE" ]; then
-        ply-image $SPLASHIMAGE > /dev/null 2>&1
+      if [ -n "$SPLASHIMAGE" ]; then
+        splash-image $SPLASHIMAGE > /dev/null 2>&1
       fi
 
       debug_msg "Framebuffer vertical res: $vres"
@@ -525,27 +561,56 @@ force_fsck() {
   fi
 }
 
+fix_bootlabel() {
+local flash_label
+
+  [ ! -b /dev/CE_FLASH ] && return 0
+
+  flash_label=$(/usr/sbin/fatlabel /dev/CE_FLASH)
+  if [ "${flash_label}" != "CE_FLASH" ]; then
+    progress "wrong eMMC flash label \"${flash_label}\", fixing it"
+    fatlabel /dev/CE_FLASH CE_FLASH 2>&1 | echo_to_kmsg
+  fi
+}
+
 check_disks() {
   if [ "$RUN_FSCK" = "yes" -a -n "$RUN_FSCK_DISKS" ]; then
     progress "Checking disk(s): $RUN_FSCK_DISKS"
-    /usr/sbin/fsck -T -M -p -a $RUN_FSCK_DISKS > /dev/null 2>&1
-    FSCK_RET=$?
+    for i in 20 19 18 17 16 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1 0; do
+      /usr/sbin/fsck -T -M -p -a $RUN_FSCK_DISKS >/dev/fsck.latest 2>&1
+      FSCK_RET=$?
+      cat /dev/fsck.latest >>/dev/fsck.log
+      cat /dev/fsck.latest | echo_to_kmsg
+      rm -f /dev/fsck.latest
 
-    # FSCK_RET is the bit-wise OR of the exit codes for each filesystem that is checked.
-    if [ $(( $FSCK_RET & 4 )) -eq 4 ]; then
-      # errors left
-      force_fsck
-    elif [ $(( $FSCK_RET & 2 )) -eq 2 ]; then
-      # reboot needed
-      echo "Filesystem repaired, reboot needed..."
-      do_reboot
-    elif [ $(( $FSCK_RET & 1 )) -eq 1 ]; then
-      # filesystem errors corrected
-      progress "Filesystem errors corrected , continuing..."
-    elif [ $(( $FSCK_RET & 0 )) -eq 0 ]; then
-      # no errors found
-      progress "No filesystem errors found, continuing..."
-    fi
+      # FSCK_RET is the bit-wise OR of the exit codes for each filesystem that is checked.
+      if [ $FSCK_RET -ge 16 ]; then
+        progress "General error, continuing..."
+        break
+      elif [ $(( $FSCK_RET & 8 )) -eq 8 ]; then
+        # device not found
+        if [ $i -eq 0 ]; then
+          progress "Device not found, continuing..."
+        else
+          usleep 500000
+        fi
+      elif [ $(( $FSCK_RET & 4 )) -eq 4 ]; then
+        # errors left
+        force_fsck
+      elif [ $(( $FSCK_RET & 2 )) -eq 2 ]; then
+        # reboot needed
+        echo "Filesystem repaired, reboot needed..."
+        do_reboot
+      elif [ $(( $FSCK_RET & 1 )) -eq 1 ]; then
+        # filesystem errors corrected
+        progress "Filesystem errors corrected , continuing..."
+        break
+      elif [ $FSCK_RET -eq 0 ]; then
+        # no errors found
+        progress "No filesystem errors found, continuing..."
+        break
+      fi
+    done
   fi
 }
 
@@ -585,10 +650,13 @@ mount_flash() {
 cleanup_flash() {
   progress "Cleaning up flash (if required)"
 
-  if [ -f /flash/pieeprom.upd ]; then
+  if [ -f /flash/pieeprom.bin -o -f /flash/pieeprom.upd -o -f /flash/vl805.bin ]; then
     mount -o remount,rw /flash
-    rm -f /flash/pieeprom.bin /flash/pieeprom.upd
+
+    rm -f /flash/pieeprom.bin /flash/pieeprom.upd /flash/pieeprom.sig
+    rm -f /flash/vl805.bin /flash/vl805.sig
     rm -f /flash/recovery.bin /flash/recovery.[0-9][0-9][0-9] /flash/RECOVERY.[0-9][0-9][0-9]
+
     mount -o remount,ro /flash
   fi
 }
@@ -688,6 +756,10 @@ check_out_of_space() {
 do_cleanup() {
   StartProgress spinner "Cleaning up... "
 
+  if mountpoint -q /update; then
+    umount /update
+  fi
+
   if [ -d $UPDATE_ROOT/.tmp/mnt ]; then
     if mountpoint -q $UPDATE_ROOT/.tmp/mnt ; then
       # busybox umount deletes loop device automatically
@@ -708,6 +780,49 @@ do_cleanup() {
   sync
 
   StopProgress "done"
+}
+
+check_force_splash() {
+  UPDATE_TAR=$(ls -1 "$UPDATE_DIR"/*.tar 2>/dev/null | head -n 1)
+  UPDATE_IMG_GZ=$(ls -1 "$UPDATE_DIR"/*.img.gz 2>/dev/null | head -n 1)
+  UPDATE_IMG=$(ls -1 "$UPDATE_DIR"/*.img 2>/dev/null | head -n 1)
+  BACKUP_FILE=$(ls -1 /storage/.restore/??????????????.tar 2>/dev/null | head -n 1)
+
+  if [ -f /storage/.config/animation.disable ]; then
+    FORCE_SPLASH="yes"
+    return
+  fi
+
+  if [ -f /storage/.please_resize_me ]; then
+    FORCE_SPLASH="yes"
+    return
+  fi
+
+  if [ -f /storage/.cache/reset_soft -o -f /storage/.cache/reset_hard ]; then
+    FORCE_SPLASH="yes"
+    return
+  fi
+
+  if [ -f "$BACKUP_FILE" ]; then
+    FORCE_SPLASH="yes"
+    return
+  fi
+
+  if [ -f "$UPDATE_DIR/$UPDATE_KERNEL" -a -f "$UPDATE_DIR/$UPDATE_SYSTEM" ] ||
+     [ -f "$UPDATE_TAR" -o -f "$UPDATE_IMG_GZ" -o -f "$UPDATE_IMG" ]; then
+    FORCE_SPLASH="yes"
+    return
+  fi
+
+  if [ "$UPDATE_DISABLED" = "yes" ]; then
+    FORCE_SPLASH="yes"
+    return
+  fi
+
+  if [ -d $UPDATE_DIR/.tmp ]; then
+    FORCE_SPLASH="yes"
+    return
+  fi
 }
 
 check_update() {
@@ -933,7 +1048,7 @@ check_update() {
     echo ""
     echo "You must re-install your system using the disk image of a"
     echo "current release, or you must re-size your existing partitions"
-    echo "so that the System (FAT) partition is at least 512MB in size."
+    echo "so that the System (FAT) partition is at least @SYSTEM_SIZE@MB in size."
     echo ""
     do_cleanup
     StartProgress countdown "Normal startup in 60s... " 60 "NOW"
@@ -941,6 +1056,7 @@ check_update() {
   fi
 
   # all ok, update
+  display_versions
   if [ -b "/$IMAGE_KERNEL" ]; then
     update_partition "Kernel" "$UPDATE_KERNEL" "/$IMAGE_KERNEL"
   else
@@ -949,8 +1065,15 @@ check_update() {
   umount /sysroot
   update_file "System" "$UPDATE_SYSTEM" "/flash/$IMAGE_SYSTEM"
   update_bootloader
-  umount /update
   do_cleanup
+
+  if [ -f /flash/user-update.sh ]; then
+    sync
+    mount -o rw,remount /flash
+    sh /flash/user-update.sh
+    mount -o ro,remount /flash
+  fi
+
   do_reboot
 }
 
@@ -972,30 +1095,43 @@ prepare_sysroot() {
   [ -f "/sysroot/usr/lib/systemd/systemd" ] || error "final_check" "Could not find systemd!"
 }
 
+amlogic_dtb_exists() {
+  DT_ID=$(sh /sysroot/usr/bin/dtname)
+
+  # modify DT_ID by dtb.conf
+  if [ -n "$DT_ID" -a -f /sysroot/usr/bin/convert_dtname ]; then
+    [ -n "$SYSTEM_ROOT" ] && SYSTEM_ROOT_ORIG="$SYSTEM_ROOT"
+    SYSTEM_ROOT="/sysroot"
+    . $SYSTEM_ROOT/usr/bin/convert_dtname $DT_ID
+    [ -n "$SYSTEM_ROOT_ORIG" ] && SYSTEM_ROOT="$SYSTEM_ROOT_ORIG"
+    unset SYSTEM_ROOT_ORIG
+  fi
+
+  DT_FILE=$(ls -1 /sysroot/usr/share/bootloader/device_trees/${DT_ID}.dtb 2>/dev/null | head -n 1)
+
+  if [ -f "/proc/device-tree/coreelec" ] &&
+     [ -n "${DT_ID}" ] &&
+     [ -f "${DT_FILE}" ]; then
+    true
+  else
+    false
+  fi
+}
+
 check_amlogic_dtb() {
   if grep -q "amlogic" /proc/device-tree/compatible; then
     if grep -q "official" /sysroot/etc/os-release; then
       progress "Checking Amlogic DTB"
-      if [ "$(uname -r)" = "3.14.29" ]; then
-        DT_ID=$(cat /proc/device-tree/le-dt-id 2>/dev/null)
-      else
-        DT_ID=$(cat /proc/device-tree/coreelec-dt-id 2>/dev/null)
+
+      if ! amlogic_dtb_exists; then
+        echo "WARNING: Your device-tree is out-of-date!"
+        echo ""
+        echo "Please update it to resume normal startup."
+        echo ""
+
+        StartProgress countdown "Normal startup in 30s... " 30 "NOW"
+        echo ""
       fi
-      DT_FILE=$(ls -1 /sysroot/usr/share/bootloader/device_trees/${DT_ID}.dtb 2>/dev/null | head -n 1)
-
-      if [ -f "/proc/device-tree/coreelec" ] &&
-         [ -n "${DT_ID}" ] &&
-         [ -f "${DT_FILE}" ]; then
-         return 0
-      fi
-
-      echo "WARNING: Your device-tree is out-of-date!"
-      echo ""
-      echo "Please update it to resume normal startup."
-      echo ""
-
-      StartProgress countdown "Normal startup in 300s... " 300 "NOW"
-      echo ""
     fi
   fi
 }
@@ -1031,9 +1167,6 @@ delete_descriptors() {
 }
 
 # Do init tasks to bring up system
-
-# hide kernel log messages on console
-echo '1 4 1 7' > /proc/sys/kernel/printk
 
 # set ondemand up_threshold
 if [ -e /sys/devices/system/cpu/cpufreq/ondemand/up_threshold ]; then
@@ -1102,15 +1235,21 @@ for arg in $(cat /proc/cmdline); do
     wol_wait=*)
       wol_wait="${arg#*=}"
       ;;
-    textmode)
-      INIT_UNIT="--unit=textmode.target"
-      ;;
     installer)
-      INIT_UNIT="--unit=installer.target"
       SYSLINUX_DEFAULT="installer"
       ;;
     debugging)
+      FORCE_SPLASH="yes"
       DEBUG=yes
+      ;;
+    nopkmute)
+      MUTE_PRINTK=no
+      ;;
+    keymap=*)
+      KEYMAP=$(ls -1 /usr/lib/keymaps/*/"${arg#*=}".bmap)
+      if [ -n "$KEYMAP" ]; then
+        loadkmap < "$KEYMAP"
+      fi
       ;;
     progress)
       PROGRESS=yes
@@ -1152,8 +1291,16 @@ for arg in $(cat /proc/cmdline); do
     bigfont=*)
       BIGFONT="${arg#*=}"
       ;;
+    ip=*)
+      KERNEL_IPCONFIG="yes"
+      ;;
   esac
 done
+
+# hide kernel log messages on console
+if [ ! "$MUTE_PRINTK" = "no" ]; then
+  echo '1 4 1 7' > /proc/sys/kernel/printk
+fi
 
 if test "$DEBUG" = "yes"; then
   exec 3>&1
@@ -1177,12 +1324,14 @@ for BOOT_STEP in \
     load_modules \
     set_consolefont \
     check_disks \
+    fix_bootlabel \
     mount_flash \
     cleanup_flash \
     update_bootmenu \
-    load_splash \
     mount_sysroot \
     mount_storage \
+    check_force_splash \
+    load_splash \
     check_update \
     prepare_sysroot \
     check_amlogic_dtb; do
@@ -1210,7 +1359,11 @@ done
 /usr/bin/busybox mount --move /dev /sysroot/dev
 /usr/bin/busybox mount --move /proc /sysroot/proc
 /usr/bin/busybox mount --move /sys /sysroot/sys
+/usr/bin/busybox mount --move /run /sysroot/run
 /usr/bin/busybox rm -fr /tmp
+
+# setup kernel overlays
+/usr/bin/busybox chroot /sysroot /usr/sbin/kernel-overlays-setup
 
 # tell OE settings addon to disable updates
 if [ "$UPDATE_DISABLED" = "yes" ]; then
@@ -1219,6 +1372,10 @@ fi
 
 if [ "$FLASH_NETBOOT" = "yes" ]; then
   echo "" > /sysroot/dev/.flash_netboot
+fi
+
+if [ "$KERNEL_IPCONFIG" = "yes" ]; then
+  echo "" > /sysroot/dev/.kernel_ipconfig
 fi
 
 # swap can not be used over nfs.(see scripts/mount-swap)
@@ -1230,12 +1387,10 @@ BACKUP_FILE=$(ls -1 /sysroot/storage/.restore/??????????????.tar 2>/dev/null | h
 
 if [ -f /sysroot/storage/.please_resize_me ]; then
   INIT_UNIT="--unit=fs-resize.target"
-elif [ -f /sysroot/storage/.cache/reset_oe -o -f /sysroot/storage/.cache/reset_xbmc ]; then
+elif [ -f /sysroot/storage/.cache/reset_soft -o -f /sysroot/storage/.cache/reset_hard ]; then
   INIT_UNIT="--unit=factory-reset.target"
 elif [ -f "$BACKUP_FILE" ]; then
   INIT_UNIT="--unit=backup-restore.target"
-elif [ -f /sysroot/storage/.rpi_flash_firmware ]; then
-  INIT_UNIT="--unit=rpi-flash-firmware.target"
 fi
 
 # stop output redirection

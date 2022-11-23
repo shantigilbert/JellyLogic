@@ -3,17 +3,16 @@
 # Copyright (C) 2019-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="connman"
-PKG_VERSION="1.37"
-PKG_SHA256="6ce29b3eb0bb16a7387bc609c39455fd13064bdcde5a4d185fab3a0c71946e16"
+PKG_VERSION="19789ae039bb782fe3fbbe9562a54480e4c34c64" # 1.41+ / 2022-10-01
+PKG_SHA256="f503afc371f21625d46e2d23c4b1cb389263dc69aba10251f810daf157284abe"
 PKG_LICENSE="GPL"
 PKG_SITE="http://www.connman.net"
-PKG_URL="https://www.kernel.org/pub/linux/network/connman/$PKG_NAME-$PKG_VERSION.tar.xz"
-PKG_DEPENDS_TARGET="toolchain glib readline dbus iptables wpa_supplicant"
+PKG_URL="https://git.kernel.org/pub/scm/network/connman/connman.git/snapshot/connman-${PKG_VERSION}.tar.gz"
+PKG_DEPENDS_TARGET="toolchain glib readline dbus iptables"
 PKG_LONGDESC="A modular network connection manager."
 PKG_TOOLCHAIN="autotools"
 
-PKG_CONFIGURE_OPTS_TARGET="WPASUPPLICANT=/usr/bin/wpa_supplicant \
-                           --srcdir=.. \
+PKG_CONFIGURE_OPTS_TARGET="--srcdir=.. \
                            --disable-debug \
                            --disable-hh2serial-gps \
                            --disable-openconnect \
@@ -31,7 +30,6 @@ PKG_CONFIGURE_OPTS_TARGET="WPASUPPLICANT=/usr/bin/wpa_supplicant \
                            --enable-loopback \
                            --enable-ethernet \
                            --disable-gadget \
-                           --enable-wifi \
                            --disable-bluetooth \
                            --disable-ofono \
                            --disable-dundee \
@@ -46,28 +44,47 @@ PKG_CONFIGURE_OPTS_TARGET="WPASUPPLICANT=/usr/bin/wpa_supplicant \
                            --with-systemdunitdir=/usr/lib/systemd/system \
                            --disable-silent-rules"
 
+if [ "${WIREGUARD_SUPPORT}" = "yes" ]; then
+  PKG_CONFIGURE_OPTS_TARGET+=" --enable-wireguard=builtin"
+else
+  PKG_CONFIGURE_OPTS_TARGET+=" --disable-wireguard"
+fi
+
+case "${WIRELESS_DAEMON}" in
+  wpa_supplicant)
+    PKG_DEPENDS_TARGET+=" wpa_supplicant"
+    PKG_CONFIGURE_OPTS_TARGET+=" WPASUPPLICANT=/usr/bin/wpa_supplicant \
+                                 --enable-wifi \
+                                 --disable-iwd"
+    ;;
+  iwd)
+    PKG_DEPENDS_TARGET+=" iwd"
+    PKG_CONFIGURE_OPTS_TARGET+=" --disable-wifi \
+                                 --enable-iwd"
+    ;;
+esac
+
 PKG_MAKE_OPTS_TARGET="storagedir=/storage/.cache/connman \
+                      vpn_storagedir=/storage/.config/wireguard \
                       statedir=/run/connman"
 
+post_configure_target() {
+  libtool_remove_rpath libtool
+}
+
 post_makeinstall_target() {
-  rm -rf $INSTALL/usr/lib/systemd
-  rm -rf $INSTALL/usr/lib/tmpfiles.d/connman_resolvconf.conf
+  rm -rf ${INSTALL}/usr/lib/systemd
+  rm -rf ${INSTALL}/usr/lib/tmpfiles.d/connman_resolvconf.conf
 
-  mkdir -p $INSTALL/usr/bin
-    cp -P client/connmanctl $INSTALL/usr/bin
+  mkdir -p ${INSTALL}/usr/bin
+    cp -P client/connmanctl ${INSTALL}/usr/bin
 
-  mkdir -p $INSTALL/usr/lib/connman
-    cp -P $PKG_DIR/scripts/connman-setup $INSTALL/usr/lib/connman
+  mkdir -p ${INSTALL}/usr/lib/connman
+    cp -P ${PKG_DIR}/scripts/connman-setup ${INSTALL}/usr/lib/connman
 
-  mkdir -p $INSTALL/etc
-    ln -sf /run/connman/resolv.conf $INSTALL/etc/resolv.conf
-
-    # /etc/hosts must be writeable
-    ln -sf /run/connman/hosts $INSTALL/etc/hosts
-
-  mkdir -p $INSTALL/etc/connman
-    cp ../src/main.conf $INSTALL/etc/connman
-    sed -i $INSTALL/etc/connman/main.conf \
+  mkdir -p ${INSTALL}/etc/connman
+    cp ../src/main.conf ${INSTALL}/etc/connman
+    sed -i ${INSTALL}/etc/connman/main.conf \
         -e "s|^# BackgroundScanning.*|BackgroundScanning = true|g" \
         -e "s|^# UseGatewaysAsTimeservers.*|UseGatewaysAsTimeservers = false|g" \
         -e "s|^# FallbackNameservers.*|FallbackNameservers = 8.8.8.8,8.8.4.4|g" \
@@ -78,11 +95,8 @@ post_makeinstall_target() {
         -e "s|^# PersistentTetheringMode.*|PersistentTetheringMode = true|g" \
         -e "s|^# NetworkInterfaceBlacklist = vmnet,vboxnet,virbr,ifb|NetworkInterfaceBlacklist = vmnet,vboxnet,virbr,ifb,docker,veth,zt|g"
 
-  mkdir -p $INSTALL/usr/config
-    cp $PKG_DIR/config/hosts.conf $INSTALL/usr/config
-
-  mkdir -p $INSTALL/usr/share/connman/
-    cp $PKG_DIR/config/settings $INSTALL/usr/share/connman/
+  mkdir -p ${INSTALL}/usr/share/connman/
+    cp ${PKG_DIR}/config/settings ${INSTALL}/usr/share/connman/
 }
 
 post_install() {
@@ -90,4 +104,7 @@ post_install() {
   add_group system 430
 
   enable_service connman.service
+  if [ "${WIREGUARD_SUPPORT}" = "yes" ]; then
+    enable_service connman-vpn.service
+  fi
 }

@@ -1,14 +1,13 @@
 #!/bin/sh
 
 # SPDX-License-Identifier: GPL-2.0
-# Copyright (C) 2018 Team LibreELEC (https://libreelec.tv)
-# Copyright (C) 2018-present Team CoreELEC (https://coreelec.org)
+# Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
 . /etc/profile
 oe_setup_addon service.snapclient
 
 . /etc/os-release
-case "$COREELEC_ARCH" in
+case "$LIBREELEC_ARCH" in
   RPi*.arm)
     if [ "$sc_a" == "true" ]; then
       ALSA="/proc/asound/ALSA"
@@ -29,12 +28,14 @@ esac
 
 [ -n "$sc_h" ] && sc_H="--hostID $sc_h"
 [ -n "$sc_s" ] && sc_S="--soundcard $sc_s"
+[ -n "$sc_addr" ] && HOST="--host $sc_addr"
 
 HOME="$ADDON_HOME" \
 nice -n "$sc_n" \
 snapclient \
   $sc_H \
   --latency "$sc_l" \
+  $HOST \
   --port "$sc_p" \
   $sc_S \
   > /dev/null

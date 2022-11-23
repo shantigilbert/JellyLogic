@@ -2,8 +2,8 @@
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="memtester"
-PKG_VERSION="4.3.0"
-PKG_SHA256="f9dfe2fd737c38fad6535bbab327da9a21f7ce4ea6f18c7b3339adef6bf5fd88"
+PKG_VERSION="4.5.1"
+PKG_SHA256="1c5fc2382576c084b314cfd334d127a66c20bd63892cac9f445bc1d8b4ca5a47"
 PKG_LICENSE="GPL"
 PKG_SITE="http://pyropus.ca/software/memtester/"
 PKG_URL="http://pyropus.ca/software/memtester/old-versions/memtester-${PKG_VERSION}.tar.gz"
@@ -16,6 +16,6 @@ make_target() {
 }
 
 makeinstall_target() {
-  mkdir -p $INSTALL/usr/bin
-  cp memtester $INSTALL/usr/bin
+  mkdir -p ${INSTALL}/usr/bin
+  cp memtester ${INSTALL}/usr/bin
 }

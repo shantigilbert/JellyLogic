@@ -1,3 +1,12 @@
+108
+- Update to 2.9.1
+
+107
+- Update to 2.8.1
+
+106
+- Update to 2.7
+
 105
 - Update to 2.5
 - Fix settings
