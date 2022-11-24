@@ -1,7 +1,0 @@
-#!/bin/sh
-
-# SPDX-License-Identifier: GPL-2.0-or-later
-# Copyright (C) 2019-present Shanti Gilbert (https://github.com/shantigilbert)
-
-LD_PRELOAD="/usr/lib/libMagickCore-7.Q16HDRI.so.6 /usr/lib/CORE_RL_Wand_.so" \
-nice -n 10 le_dotnet /storage/.config/jellyfin/jellyfin.dll -datadir /storage/jellyfin -ffmpeg /usr/bin/ffmpeg

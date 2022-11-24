@@ -6,7 +6,7 @@ After=kodi.service
 Conflicts=service.emby.service
 
 [Service]
-ExecStart=/bin/sh /usr/bin/jellyfin.start
+ExecStart=/bin/sh /usr/bin/jellyfin-start
 Restart=always
 
 [Install]

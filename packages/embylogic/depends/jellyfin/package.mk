@@ -13,15 +13,19 @@ PKG_DEPENDS_TARGET="toolchain imagemagick dotnet-runtime ffmpegx"
 PKG_SECTION="service"
 PKG_SHORTDESC="The Free Software Media System"
 PKG_TOOLCHAIN="manual"
-PKG_IS_ADDON="no"
 
-make_target() {
-  mkdir -p $INSTALL/usr/config/jellyfin
-  cp -r $PKG_BUILD/* $INSTALL/usr/config/jellyfin
-  mkdir -p $INSTALL/usr/bin
-  cp -r $PKG_DIR/bin/* -d $INSTALL/usr/bin
-  ln -sf /storage/.config/jellyfin $INSTALL/jellyfin
-}
+makeinstall_target() {
+  mkdir -p ${INSTALL}/usr/config/jellyfin
+  mkdir -p ${INSTALL}/usr/bin
+    
+  cp -r ${PKG_BUILD}/* ${INSTALL}/usr/config/jellyfin
+  touch ${INSTALL}/usr/config/jellyfin/extract.ok
+  cp -r ${PKG_DIR}/bin/* -d ${INSTALL}/usr/bin
+  ln -sf /storage/.config/jellyfin ${INSTALL}/jellyfin
+
+  sed -e "s/@JELLYFIN_VERSION@/${PKG_VERSION}/g" -i "${INSTALL}/usr/bin/jellyfin-downloader"
+  sed -e "s/@JELLYFIN_VERSION@/${PKG_VERSION}/g" -i "${INSTALL}/usr/bin/jellyfin-start"
+ }
 
 post_install() {
    enable_service jellyfin.service

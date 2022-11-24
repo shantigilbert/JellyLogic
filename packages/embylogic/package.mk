@@ -7,8 +7,7 @@ PKG_REV="1"
 PKG_ARCH="any"
 PKG_SITE=""
 PKG_URL=""
-PKG_DEPENDS_TARGET="toolchain jellyfin docker"
-PKG_SECTION="emuelec"
+PKG_DEPENDS_TARGET="toolchain jellyfin docker xmlstarlet"
 PKG_SHORTDESC="Embylogic Meta Package"
 PKG_LONGDESC="Embylogic Meta Package"
 PKG_IS_ADDON="no"
@@ -29,8 +28,6 @@ makeinstall_target() {
     cp -rf $PKG_DIR/config/* $INSTALL/usr/config/
    }
    
-
-
 post_install() {
 # link default.target to embylogic
    ln -sf embylogic.target $INSTALL/usr/lib/systemd/system/default.target

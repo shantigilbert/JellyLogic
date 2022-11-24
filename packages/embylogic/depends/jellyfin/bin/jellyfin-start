@@ -1,0 +1,21 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2021-present Team LibreELEC (https://libreelec.tv)
+
+. /etc/profile
+
+JELLYPATH="/storage/.config/jellyfin"
+
+# check if jellyfin is already successful installed
+#if [ ! -f "${JELLYPATH}/extract.ok" ]; then
+#  cd "${JELLYPATH}"
+#  jellyfin-downloader
+#fi
+
+libs="${JELLYPATH}/jellyfin_@JELLYFIN_VERSION@"
+
+exec \
+nice -n "10" \
+dotnet "${libs}/jellyfin.dll" \
+  --datadir "${JELLYPATH}" \
+  --ffmpeg "/usr/bin/ffmpeg"
