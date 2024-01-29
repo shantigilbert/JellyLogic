@@ -1,4 +1,4 @@
-all: release
+all: image
 
 system:
 	./scripts/image

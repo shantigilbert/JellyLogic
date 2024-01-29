@@ -7,9 +7,12 @@ mkdir -p /storage/.cache/services/
 touch /storage/.cache/services/sshd.conf
 systemctl start sshd
 
-#if [[ ! -d "/storage/emby" ]]; then
-#	mkdir -p /storage/emby
-#fi 
+# Set ip to 192.168.1.222 mostly for AdGuardHome
+connmanctl config "$(connmanctl services | awk '/^\*/ {print $3}')" --ipv4 manual 192.168.1.222 255.255.255.0 192.168.1.254
 
+#echo "jelly" > /storage/.cache/hostname
+#cat /storage/.cache/hostname > /proc/sys/kernel/hostname 
+
+systemctl restart adguard
 systemctl start jellyfin
 

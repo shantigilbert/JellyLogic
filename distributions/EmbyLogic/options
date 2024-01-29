@@ -39,7 +39,7 @@
   HARDENING_SUPPORT="no"
 
 # Default supported get handlers (archive, git, file etc.)
-  GET_HANDLER_SUPPORT="archive"
+  GET_HANDLER_SUPPORT="archive git"
 
 
 ### OS CONFIGURATION ###

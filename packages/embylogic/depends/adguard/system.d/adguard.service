@@ -1,0 +1,11 @@
+[Unit]
+Description=AdGuardHome
+Documentation=https://adguard.com/en/adguard-home
+
+[Service]
+ExecStartPre=-/bin/sh -c 'mkdir -p /storage/.config/adguard'
+ExecStart=/bin/sh /usr/bin/AdGuardHome -w /storage/.config/adguard
+Restart=always
+
+[Install]
+WantedBy=embylogic.service

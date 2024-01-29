@@ -6,15 +6,14 @@ PKG_REV="120"
 PKG_ARCH="any"
 PKG_LICENSE="MIT"
 PKG_SITE="https://dotnet.microsoft.com/"
-PKG_DEPENDS_TARGET="toolchain icu aspnet6-runtime dotnet3-runtime"
+PKG_DEPENDS_TARGET="toolchain icu aspnet6-runtime"
 PKG_SECTION="tools"
 PKG_SHORTDESC="ASP.NET Core Runtime"
-PKG_LONGDESC="ASP.NET Core Runtimes ($(get_pkg_version dotnet3-runtime)) and ($(get_pkg_version aspnet6-runtime)) enables you to run existing console/web/server applications."
+PKG_LONGDESC="ASP.NET Core Runtimes ($(get_pkg_version aspnet6-runtime)) enables you to run existing console/web/server applications."
 PKG_TOOLCHAIN="manual"
 PKG_IS_ADDON="no"
 
 makeinstall_target() {
   mkdir -p $INSTALL/usr/bin
-  cp -r $(get_build_dir dotnet3-runtime)/* $INSTALL/usr/bin
   cp -r $(get_build_dir aspnet6-runtime)/* $INSTALL/usr/bin
 } 
