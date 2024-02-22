@@ -21,7 +21,7 @@ DISTRO_DIR="${ROOT}/distributions"
 PROJECT_DIR="${ROOT}/projects"
 
 # determines DISTRO, if not forced by user
-DISTRO="${DISTRO:-EmbyLogic}"
+DISTRO="${DISTRO:-JellyLogic}"
 
 # determines PROJECT, if not forced by user
 export PROJECT="${PROJECT:-Amlogic-ce}"

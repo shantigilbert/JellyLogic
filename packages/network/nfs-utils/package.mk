@@ -30,6 +30,8 @@ post_unpack() {
 pre_configure_host() {
   cd $PKG_BUILD
   rm -rf .$HOST_NAME
+  
+  [ -f /etc/lsb-release ] && ( grep -q "22.04" /etc/lsb-release ) && CFLAGS+=" -I/usr/include/tirpc"
 
   PKG_CONFIGURE_OPTS_HOST=" \
     --with-statedir=/run/nfs \

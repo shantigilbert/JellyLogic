@@ -8,4 +8,4 @@ ExecStart=/bin/sh /usr/bin/AdGuardHome -w /storage/.config/adguard
 Restart=always
 
 [Install]
-WantedBy=embylogic.service
+WantedBy=jellylogic.service

@@ -1,5 +1,5 @@
 [Unit]
-Description=embylogic user autostart script
+Description=jellylogic user autostart script
 before=emby.service
 After=graphical.target
 
@@ -10,4 +10,4 @@ ExecStart=-/bin/sh -c ". /etc/profile; exec /bin/sh /storage/.config/autostart.s
 RemainAfterExit=yes
 
 [Install]
-WantedBy=embylogic.target
+WantedBy=jellylogic.target

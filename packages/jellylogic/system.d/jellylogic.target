@@ -1,5 +1,5 @@
 [Unit]
-Description=embylogic
+Description=jellylogic
 Requires=multi-user.target graphical.target
 After=graphical.target
 #Requires=basic.target

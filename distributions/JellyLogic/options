@@ -1,20 +1,20 @@
 ### DISTRO INFORMATION ###
 
 # Name of the Distro to build (full name, without special characters)
-  DISTRONAME="EmbyLogic"
+  DISTRONAME="JellyLogic"
 
 # short project description
   DESCRIPTION="Headless Jellyfin Server"
 
 # Welcome Message for e.g. SSH Server (up to 5 Lines)
   GREETING0="##############################################"
-  GREETING1="#                  EmbyLogic                 #"
+  GREETING1="#                  JellyLogic                 #"
   GREETING2="#            Headless Jellyfin Server            #"
   GREETING3="##############################################"
   GREETING4=""
 
 # Root password to integrate in the target system
-  ROOT_PASSWORD="emby"
+  ROOT_PASSWORD="jelly"
 
 # Partition labels for USB/SD installation media
   DISTRO_BOOTLABEL="JELLYLOGIC"
@@ -74,7 +74,7 @@
 
 ### KODI SETTINGS ###
 # Mediacenter to use (kodi / no)
-  MEDIACENTER="embylogic"
+  MEDIACENTER="jellylogic"
 
 # Skins to install (Estuary)
 # Space separated list is supported,
@@ -163,13 +163,13 @@
   ADDON_REPO_ID="repository.coreelec"
 
 # Name of the default addon repository
-  ADDON_REPO_NAME="EmbyLogic Add-ons"
+  ADDON_REPO_NAME="JellyLogic Add-ons"
 
 # set the addon dirs
   ADDON_PATH="$ADDON_VERSION/$PROJECT/$TARGET_ARCH"
 
 # Settings package name - blank if not required
-  DISTRO_PKG_SETTINGS="EmbyLogic-settings"
+  DISTRO_PKG_SETTINGS=""
   DISTRO_PKG_SETTINGS_ID="service.coreelec.settings"
 
 

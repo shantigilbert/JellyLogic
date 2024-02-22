@@ -10,4 +10,4 @@ ExecStart=/bin/sh /usr/bin/jellyfin-start
 Restart=always
 
 [Install]
-WantedBy=embylogic.service
+WantedBy=jellylogic.service
